@@ -1,33 +1,49 @@
-namespace FraudDetectionWorker;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
+namespace FraudDetectionWorker;
 
 public class FraudWorker : BackgroundService
 {
     private readonly ILogger<FraudWorker> _logger;
-    private readonly IRulesRepository _rules;
+    private readonly IEnumerable<IFraudRule> _rules;
 
-    public FraudWorker(ILogger<FraudWorker> logger, IRulesRepository rulesRepository)
+    public FraudWorker(ILogger<FraudWorker> logger, IEnumerable<IFraudRule> rules)
     {
         _logger = logger;
-        _rules = rulesRepository;
+        _rules = rules;
     }
-
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-
-        //Fraud rules will be checked as foreac _rulesRepository in the system, 
-        //and if any of the rules are satisfied, the transaction will be flagged as suspicious and 
-        //sent to the fraud detection team for further investigation.
-
+        _logger.LogInformation("FraudWorker background service is starting.");
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Running fraud detection rules check...");
+
+            foreach (var rule in _rules)
             {
-                _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+                try
+                {
+                    bool isSatisfied = await rule.IsRuleSatisfiedAsync(stoppingToken);
+                    if (!isSatisfied)
+                    {
+                        _logger.LogWarning("Fraud rule '{RuleName}' was NOT satisfied!", rule.Name);
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    _logger.LogError(ex, "Error executing rule '{RuleName}'", rule.Name);
+                }
             }
-            await Task.Delay(1000, stoppingToken);
+
+            // Wait 24 hours between runs as specified in README
+            await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
         }
     }
 }
+
