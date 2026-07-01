@@ -1,9 +1,13 @@
 # Build results
-bin/
-obj/
+[Bb]in/
+[Oo]bj/
 *.dll
 *.exe
 *.pdb
+
+# Test results
+[Tt]est[Rr]esult*/
+*.trx
 
 # Visual Studio
 .vs/
@@ -11,18 +15,28 @@ obj/
 *.user
 *.suo
 *.userosscache
+*.suo
+*.suo.tmp
+*.userosscache
+*.sln.docstates
 
 # Rider IDE
 .idea/
 *.sln.iml
+*.sln.DotSettings.user
 
 # VS Code
-.vscode/settings.json
-.vscode/launch.json
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
 
 # NuGet
 packages/
 .nuget/
+project.lock.json
+project.fragment.lock.json
 
 # Local app settings
 appsettings.Local.json
@@ -30,6 +44,10 @@ appsettings.*.local.json
 
 # macOS
 .DS_Store
+.AppleDouble
+.LSOverride
 
-# Rider
-*.DotSettings.user
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini

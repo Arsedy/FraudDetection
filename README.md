@@ -1,21 +1,93 @@
-//current TODO List : 
-//make a worker that do clear fraud detection every 24 hours 
-//make a repository interface for rules as IRulesRepository every rule need to follow that interface 
-//add business logic with rules 
-//with mock data flag if fraud detects 
-//improvements note other than every 24 hour clean cheks every payment goes trough detection with async 
-- fraud function like we could hava a redis cache in server life-time could be 1-2 minutes and if same -amount of payment goes trough twice we flagged as fraud
+# Fraud Detection Background Worker
 
-//I can use both EF and DAPPER ef could make easy cruds like flagging etc. but while we checking the transactions DAPPER could make faster optimized queries with indexing cardNo's etc.
-as in : 
-select location , amount 
-from transaction as t 
-left join user 
-where user.cardNo == t.cardNo
-""
-this is sample not a funtional code with something like this we can check every persons transactions and
-with the infos about locations , amounts , and probably avarage amounts i can detect wheter it is a fraud or not to flag it to the sql via ef for fast Updates .  
+A high-performance .NET 9.0 background worker designed to detect financial transaction fraud. The application processes payment authorizations conforming to the **ISO 8583 standard**, runs them against configurable rules, and flags suspicious transactions.
 
---Note to myself update the Readme before publishing anything 
+---
 
--Ali Eren Özer
+## 🎯 Purpose of the Project
+
+The purpose of this project is to simulate and monitor credit card transaction flows, identify fraudulent activities (such as rapid velocity swiping, card credential testing, and geographic impossible travel anomalies), and log alerts for security analysts. It is built as a highly scalable background service that operates efficiently over large volumes of database transactions.
+
+---
+
+## 🏗️ Folder Structure
+
+```text
+FraudDetectionWorker/
+│
+├── Database/
+│   ├── AppDbContext.cs        # EF Core DbContext mapping tables & indexes
+│   └── SchemaBuilder.cs       # Automatic database & schema creation helper
+│
+├── Models/
+│   ├── AuthorizationTransaction.cs # EF model for ISO 8583 transactions
+│   └── FraudAlert.cs          # EF model for flagged suspicious transactions
+│
+├── Rules/
+│   ├── IFraudRule.cs          # Interface for all fraud rules
+│   └── VelocityRule.cs        # Rule checking card velocity limits
+│
+├── Seeding/
+│   ├── DataGenerator.cs       # Mock data generator (Luhn check, fraud patterns)
+│   └── DataSeeder.cs          # High-speed binary COPY seeder for PostgreSQL
+│
+├── Repositories/              # Interface & implementation of data access
+├── Services/                  # Application business services
+├── Tests/                     # xUnit unit tests folder
+│
+├── Program.cs                 # Main entry point (commands parsing & DI setup)
+├── FraudWorker.cs             # Background worker service (runs rules check loops)
+├── appsettings.json           # Default configuration & connection strings
+└── .gitignore                 # Exclusion rules for Rider, VS, Code, OS, and builds
+```
+
+---
+
+## ⚙️ Technical Features
+
+* **ISO 8583 Specification**: Maps financial transaction card message fields case-insensitively to standard database columns (e.g., `f2_pan` for card number, `f11_stan` for trace numbers, `f18_mcc` for merchant categories, `f37_rrn` for retrieval reference numbers, and `f39_responsecode` for transaction results).
+* **High-Speed Binary Seeding**: Utilizes PostgreSQL's native binary `COPY` protocol (`BeginBinaryImport` in Npgsql) to seed **1,000,000 rows of mock data in under 15 seconds** with safe datatype formatting (converting `TimeSpan` to `TimeOnly` and UTC offsets).
+* **Database Optimization**: Implements B-Tree compound indexing on `(f2_pan, f7_txndatetime)` to fetch a card's historical swipes in milliseconds, bypassing the need for scanning the entire table.
+* **Separation of Concerns**: Uses the **Repository Pattern** to separate raw database query implementation from pure business rule checking, making unit testing clean and mockable.
+* **Robust State Tracking**: Designed to run via a **Timestamp Sliding Window** or **Status Flagging**, preventing repetitive scans of older transactions and saving memory.
+
+---
+
+## 🚀 How to Setup and Run
+
+### 1. Prerequisites
+Ensure you have the following installed on your machine:
+* [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
+* [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+
+### 2. Start PostgreSQL Container
+Spin up a local PostgreSQL container using Docker:
+```bash
+docker run --name postgres_db -e POSTGRES_PASSWORD=YourSecurePassword123! -p 5432:5432 -d postgres:latest
+```
+
+### 3. Clone and Download
+Clone the repository to your local machine:
+```bash
+git clone <repository-url>
+cd FraudDetectionWorker
+```
+
+### 4. Database Setup & Seeding
+To automatically create the database, tables, indexes, and seed it with 1,000,000 mock transactions, run the seeding command:
+```bash
+dotnet run -- --seed --count 1000000
+```
+*(The seeder will check existing STAN/RRN counters in the database on consecutive runs and append data chronologically without duplicate key collisions.)*
+
+### 5. Running the Background Service
+To start the background worker service to monitor and check rules:
+```bash
+dotnet run
+```
+
+### 6. Running Tests
+To run unit tests:
+```bash
+dotnet test
+```
