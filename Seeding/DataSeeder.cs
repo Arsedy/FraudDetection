@@ -44,14 +44,13 @@ public class DataSeeder
             _logger.LogInformation("Generating batch {BatchIndex} of size {Size}...", batchIndex, currentBatchSize);
 
             var batchStopwatch = Stopwatch.StartNew();
-            var (auths, clearings) = generator.GenerateBatch(currentBatchSize, ref startStan, ref startRrn, baseDate);
+            var auths = generator.GenerateBatch(currentBatchSize, ref startStan, ref startRrn, baseDate);
             batchStopwatch.Stop();
 
             _logger.LogInformation("Generated batch in {ElapsedMs} ms. Bulk importing to PostgreSQL...", batchStopwatch.ElapsedMilliseconds);
 
             batchStopwatch.Restart();
             BulkInsert(auths, "authorizationtransactions");
-            BulkInsert(clearings, "clearingtransactions");
             batchStopwatch.Stop();
 
             seededCount += currentBatchSize;

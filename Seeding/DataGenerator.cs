@@ -13,8 +13,6 @@ public class DataGenerator
     
     // ISO 3166 numeric country codes
     private static readonly string[] Countries = ["840", "792", "826", "250", "276", "380", "392", "036"]; // USA, Turkey, UK, France, Germany, Italy, Japan, Australia
-    // ISO 4217 numeric currency codes
-    private static readonly string[] Currencies = ["840", "978", "826", "392", "036"]; // USD, EUR, GBP, JPY, AUD
 
     public DataGenerator(int cardPoolSize = 50000, int merchantPoolSize = 10000)
     {
@@ -32,7 +30,6 @@ public class DataGenerator
 
     private string GenerateValidPan()
     {
-        // 1 = Visa (starts with 4), 2 = Mastercard (starts with 51-55), 3 = Amex (starts with 37)
         int cardType = _rand.Next(1, 4);
         string bin = cardType switch
         {
@@ -85,26 +82,26 @@ public class DataGenerator
 
         var mccs = new Dictionary<string, string>
         {
-            { "AMAZON.COM", "5942" }, // Bookstores/Retail
-            { "WAL-MART", "5311" },   // Department Stores
+            { "AMAZON.COM", "5942" },
+            { "WAL-MART", "5311" },
             { "TARGET", "5311" },
-            { "BEST BUY", "5732" },   // Electronics
-            { "EXXONMOBIL", "5541" }, // Service Stations
+            { "BEST BUY", "5732" },
+            { "EXXONMOBIL", "5541" },
             { "SHELL OIL", "5541" },
             { "CHEVRON", "5541" },
-            { "MARRIOTT HOTELS", "3501" }, // Hotel
+            { "MARRIOTT HOTELS", "3501" },
             { "HILTON HOTELS", "3501" },
-            { "DELTA AIRLINES", "4511" },  // Airlines
-            { "STEAM GAMES", "5816" },     // Digital Goods
+            { "DELTA AIRLINES", "4511" },
+            { "STEAM GAMES", "5816" },
             { "APPLE STORE", "5732" },
-            { "NETFLIX", "4899" },         // Cable/Streaming
+            { "NETFLIX", "4899" },
             { "SPOTIFY", "4899" },
-            { "UBER RIDE", "4121" },       // Taxicabs/Limousines
-            { "STARBUCKS", "5814" },       // Fast Food
+            { "UBER RIDE", "4121" },
+            { "STARBUCKS", "5814" },
             { "MC DONALD'S", "5814" },
-            { "CASINO GRANDE", "7995" },   // Betting/Gambling (High Risk)
-            { "GOLD JEWELERS", "5944" },   // Jewelry (High Risk)
-            { "BINANCE EXCH", "6012" },    // Financial (High Risk)
+            { "CASINO GRANDE", "7995" },
+            { "GOLD JEWELERS", "5944" },
+            { "BINANCE EXCH", "6012" },
             { "CASH APP", "6012" },
             { "PATEK PHILIPPE", "5944" }
         };
@@ -119,9 +116,8 @@ public class DataGenerator
             string country = locName.Contains("GB") ? "826" : 
                              locName.Contains("FR") ? "250" : 
                              locName.Contains("DE") ? "276" : 
-                             locName.Contains("TR") ? "792" : "840"; // USA by default
+                             locName.Contains("TR") ? "792" : "840";
 
-            // Standardize merchant name to fit F43 (40 chars)
             string f43Name = (name.Length > 22 ? name[..22] : name).PadRight(22);
             string f43Loc = (locName.Length > 18 ? locName[..18] : locName).PadRight(18);
             string merchantLocation = f43Name + f43Loc;
@@ -137,7 +133,7 @@ public class DataGenerator
         }
     }
 
-    public static (DataTable auths, DataTable clearings) CreateDataTables()
+    public static DataTable CreateDataTable()
     {
         var auths = new DataTable("AuthorizationTransactions");
         auths.Columns.Add("TransactionId", typeof(Guid));
@@ -163,23 +159,12 @@ public class DataGenerator
         auths.Columns.Add("IsFraud", typeof(bool));
         auths.Columns.Add("FraudRuleReason", typeof(string));
 
-        var clearings = new DataTable("ClearingTransactions");
-        clearings.Columns.Add("ClearingId", typeof(Guid));
-        clearings.Columns.Add("F2_PAN", typeof(string));
-        clearings.Columns.Add("F37_RRN", typeof(string));
-        clearings.Columns.Add("SettlementAmount", typeof(decimal));
-        clearings.Columns.Add("SettlementCurrency", typeof(string));
-        clearings.Columns.Add("InterchangeFee", typeof(decimal));
-        clearings.Columns.Add("SettlementDate", typeof(DateTime));
-        clearings.Columns.Add("ClearingStatus", typeof(string));
-        clearings.Columns.Add("ReconciliationStatus", typeof(string));
-
-        return (auths, clearings);
+        return auths;
     }
 
-    public (DataTable auths, DataTable clearings) GenerateBatch(int count, ref long currentStan, ref long currentRrn, DateTime baseDate, double fraudRate = 0.015)
+    public DataTable GenerateBatch(int count, ref long currentStan, ref long currentRrn, DateTime baseDate, double fraudRate = 0.015)
     {
-        var (auths, clearings) = CreateDataTables();
+        var auths = CreateDataTable();
 
         int fraudCountTarget = (int)(count * fraudRate);
         int generatedFraud = 0;
@@ -187,13 +172,9 @@ public class DataGenerator
         int i = 0;
         while (i < count)
         {
-            // Pick a random card
             string pan = _cardPool[_rand.Next(_cardPool.Count)];
-            
-            // Random timestamp within the window
-            DateTime txnDateTime = baseDate.AddSeconds(_rand.Next(0, 86400 * 90)); // spread over 90 days
+            DateTime txnDateTime = baseDate.AddSeconds(_rand.Next(0, 86400 * 90));
 
-            // Determine if this card will trigger a fraud pattern
             bool generateFraudPattern = (generatedFraud < fraudCountTarget) && (_rand.NextDouble() < 0.1);
 
             if (generateFraudPattern)
@@ -201,10 +182,10 @@ public class DataGenerator
                 int pattern = _rand.Next(1, 5);
                 int injectedCount = pattern switch
                 {
-                    1 => GenerateCNPVelocityPattern(auths, clearings, pan, txnDateTime, ref currentStan, ref currentRrn),
-                    2 => GenerateImpossibleTravelPattern(auths, clearings, pan, txnDateTime, ref currentStan, ref currentRrn),
-                    3 => GenerateCardTestingPattern(auths, clearings, pan, txnDateTime, ref currentStan, ref currentRrn),
-                    _ => GenerateHighRiskOffHoursPattern(auths, clearings, pan, txnDateTime, ref currentStan, ref currentRrn)
+                    1 => GenerateCNPVelocityPattern(auths, pan, txnDateTime, ref currentStan, ref currentRrn),
+                    2 => GenerateImpossibleTravelPattern(auths, pan, txnDateTime, ref currentStan, ref currentRrn),
+                    3 => GenerateCardTestingPattern(auths, pan, txnDateTime, ref currentStan, ref currentRrn),
+                    _ => GenerateHighRiskOffHoursPattern(auths, pan, txnDateTime, ref currentStan, ref currentRrn)
                 };
 
                 generatedFraud += injectedCount;
@@ -212,27 +193,26 @@ public class DataGenerator
             }
             else
             {
-                // Generate a normal legitimate transaction
-                GenerateNormalTransaction(auths, clearings, pan, txnDateTime, ref currentStan, ref currentRrn);
+                GenerateNormalTransaction(auths, pan, txnDateTime, ref currentStan, ref currentRrn);
                 i++;
             }
         }
 
-        return (auths, clearings);
+        return auths;
     }
 
-    private void GenerateNormalTransaction(DataTable auths, DataTable clearings, string pan, DateTime txnTime, ref long stan, ref long rrn)
+    private void GenerateNormalTransaction(DataTable auths, string pan, DateTime txnTime, ref long stan, ref long rrn)
     {
         var merchant = _merchantPool[_rand.Next(_merchantPool.Count)];
         
-        decimal amount = (decimal)(_rand.NextDouble() * 120 + 2.50); // typical $2.50 to $122.50 transaction
-        if (_rand.NextDouble() < 0.05) amount = (decimal)(_rand.NextDouble() * 800 + 100); // 5% high value
+        decimal amount = (decimal)(_rand.NextDouble() * 120 + 2.50);
+        if (_rand.NextDouble() < 0.05) amount = (decimal)(_rand.NextDouble() * 800 + 100);
 
         string entryMode = _rand.Next(1, 4) switch
         {
-            1 => "051", // EMV Chip (very common, low risk)
-            2 => "071", // Contactless (low risk)
-            _ => "012"  // Online/CNP (medium risk)
+            1 => "051",
+            2 => "071",
+            _ => "012"
         };
 
         string rrnStr = GetNextRrn(ref rrn);
@@ -248,56 +228,34 @@ public class DataGenerator
             stan: stanStr,
             rrn: rrnStr,
             authCode: _rand.Next(100000, 999999).ToString(),
-            respCode: "00", // approved
+            respCode: "00",
             mcc: merchant.MCC,
             country: merchant.Country,
             entryMode: entryMode,
             tid: merchant.TID,
             mid: merchant.MID,
             location: merchant.NameAndLocation,
-            currency: "840", // USD
+            currency: "840",
             isFraud: false,
             fraudReason: null
         );
-
-        // Generate normal clearing
-        if (_rand.NextDouble() < 0.98) // 98% settlement rate for approved txns
-        {
-            DateTime settleDate = txnTime.Date.AddDays(_rand.Next(1, 3));
-            decimal interchange = amount * 0.015m; // 1.5% interchange fee
-            
-            AddClearingRow(clearings,
-                clearingId: Guid.NewGuid(),
-                pan: pan,
-                rrn: rrnStr,
-                settleAmount: amount,
-                currency: "840",
-                interchange: interchange,
-                settleDate: settleDate,
-                status: "Settled",
-                recon: "Matched"
-            );
-        }
     }
 
-    private int GenerateCNPVelocityPattern(DataTable auths, DataTable clearings, string pan, DateTime baseTime, ref long stan, ref long rrn)
+    private int GenerateCNPVelocityPattern(DataTable auths, string pan, DateTime baseTime, ref long stan, ref long rrn)
     {
-        // 5 to 8 rapid online transactions at different merchants in minutes
         int txCount = _rand.Next(5, 9);
-        decimal baseAmount = (decimal)(_rand.NextDouble() * 300 + 150); // E.g., $150 to $450
+        decimal baseAmount = (decimal)(_rand.NextDouble() * 300 + 150);
         
         for (int step = 0; step < txCount; step++)
         {
             DateTime txnTime = baseTime.AddMinutes(step * _rand.Next(1, 3));
-            // Find a high-risk online merchant
             var merchant = _merchantPool.Find(m => m.MCC == "5942" || m.MCC == "5816" || m.MCC == "6012") ?? _merchantPool[0];
-            decimal amount = baseAmount + (step * 50); // increasing amounts
+            decimal amount = baseAmount + (step * 50);
 
             string rrnStr = GetNextRrn(ref rrn);
             string stanStr = GetNextStan(ref stan);
 
-            // Set response code: first few succeed, then decline on limit
-            string respCode = step < 4 ? "00" : "51"; // 51 = insufficient funds/limits
+            string respCode = step < 4 ? "00" : "51";
             string authCode = respCode == "00" ? _rand.Next(100000, 999999).ToString() : "";
 
             AddAuthRow(auths,
@@ -313,7 +271,7 @@ public class DataGenerator
                 respCode: respCode,
                 mcc: merchant.MCC,
                 country: merchant.Country,
-                entryMode: "012", // CNP
+                entryMode: "012",
                 tid: merchant.TID,
                 mid: merchant.MID,
                 location: merchant.NameAndLocation,
@@ -321,34 +279,13 @@ public class DataGenerator
                 isFraud: true,
                 fraudReason: "CNP Velocity Attack"
             );
-
-            if (respCode == "00")
-            {
-                // Most fraud results in a chargeback in clearing
-                DateTime settleDate = txnTime.Date.AddDays(_rand.Next(1, 3));
-                bool isChargedback = _rand.NextDouble() < 0.80; // 80% chance of chargeback
-                
-                AddClearingRow(clearings,
-                    clearingId: Guid.NewGuid(),
-                    pan: pan,
-                    rrn: rrnStr,
-                    settleAmount: amount,
-                    currency: "840",
-                    interchange: amount * 0.015m,
-                    settleDate: settleDate,
-                    status: isChargedback ? "ChargedBack" : "Settled",
-                    recon: "Matched"
-                );
-            }
         }
 
         return txCount;
     }
 
-    private int GenerateImpossibleTravelPattern(DataTable auths, DataTable clearings, string pan, DateTime baseTime, ref long stan, ref long rrn)
+    private int GenerateImpossibleTravelPattern(DataTable auths, string pan, DateTime baseTime, ref long stan, ref long rrn)
     {
-        // Two transactions: one in USA (840), next in Germany (276) or Turkey (792) 30 minutes later
-        // First txn: USA
         var usaMerchant = _merchantPool.Find(m => m.Country == "840") ?? _merchantPool[0];
         string rrn1 = GetNextRrn(ref rrn);
         string stan1 = GetNextStan(ref stan);
@@ -367,7 +304,7 @@ public class DataGenerator
             respCode: "00",
             mcc: usaMerchant.MCC,
             country: "840",
-            entryMode: "051", // Chip
+            entryMode: "051",
             tid: usaMerchant.TID,
             mid: usaMerchant.MID,
             location: usaMerchant.NameAndLocation,
@@ -376,20 +313,6 @@ public class DataGenerator
             fraudReason: "Impossible Travel Anomaly"
         );
 
-        DateTime settleDate1 = baseTime.Date.AddDays(_rand.Next(1, 3));
-        AddClearingRow(clearings,
-            clearingId: Guid.NewGuid(),
-            pan: pan,
-            rrn: rrn1,
-            settleAmount: amount1,
-            currency: "840",
-            interchange: amount1 * 0.015m,
-            settleDate: settleDate1,
-            status: "Settled",
-            recon: "Matched"
-        );
-
-        // Second txn: Europe/Turkey, 40 minutes later
         DateTime travelTxnTime = baseTime.AddMinutes(_rand.Next(25, 45));
         var euroMerchant = _merchantPool.Find(m => m.Country == "792" || m.Country == "276") ?? _merchantPool[1];
         string rrn2 = GetNextRrn(ref rrn);
@@ -413,38 +336,23 @@ public class DataGenerator
             tid: euroMerchant.TID,
             mid: euroMerchant.MID,
             location: euroMerchant.NameAndLocation,
-            currency: euroMerchant.Country == "792" ? "949" : "978", // TRY or EUR
+            currency: euroMerchant.Country == "792" ? "949" : "978",
             isFraud: true,
             fraudReason: "Impossible Travel Anomaly"
-        );
-
-        DateTime settleDate2 = travelTxnTime.Date.AddDays(_rand.Next(1, 3));
-        bool isChargedback = _rand.NextDouble() < 0.70;
-        AddClearingRow(clearings,
-            clearingId: Guid.NewGuid(),
-            pan: pan,
-            rrn: rrn2,
-            settleAmount: amount2,
-            currency: euroMerchant.Country == "792" ? "949" : "978",
-            interchange: amount2 * 0.015m,
-            settleDate: settleDate2,
-            status: isChargedback ? "ChargedBack" : "Settled",
-            recon: "Matched"
         );
 
         return 2;
     }
 
-    private int GenerateCardTestingPattern(DataTable auths, DataTable clearings, string pan, DateTime baseTime, ref long stan, ref long rrn)
+    private int GenerateCardTestingPattern(DataTable auths, string pan, DateTime baseTime, ref long stan, ref long rrn)
     {
-        // 4 quick small amount declines followed by a large success
         int declineCount = _rand.Next(3, 6);
         var onlineMerchant = _merchantPool.Find(m => m.MCC == "5816" || m.MCC == "5942") ?? _merchantPool[0];
 
         for (int step = 0; step < declineCount; step++)
         {
             DateTime txnTime = baseTime.AddSeconds(step * _rand.Next(10, 40));
-            decimal smallAmount = (decimal)(_rand.NextDouble() * 1.50 + 0.10); // $0.10 - $1.60
+            decimal smallAmount = (decimal)(_rand.NextDouble() * 1.50 + 0.10);
 
             string rrnStr = GetNextRrn(ref rrn);
             string stanStr = GetNextStan(ref stan);
@@ -459,10 +367,10 @@ public class DataGenerator
                 stan: stanStr,
                 rrn: rrnStr,
                 authCode: "",
-                respCode: "05", // 05 = Do not honor (decline)
+                respCode: "05",
                 mcc: onlineMerchant.MCC,
                 country: onlineMerchant.Country,
-                entryMode: "012", // CNP
+                entryMode: "012",
                 tid: onlineMerchant.TID,
                 mid: onlineMerchant.MID,
                 location: onlineMerchant.NameAndLocation,
@@ -472,9 +380,8 @@ public class DataGenerator
             );
         }
 
-        // The final large success
         DateTime successTime = baseTime.AddSeconds(declineCount * 30 + 10);
-        decimal bigAmount = (decimal)(_rand.NextDouble() * 500 + 400); // $400 - $900
+        decimal bigAmount = (decimal)(_rand.NextDouble() * 500 + 400);
         string successRrn = GetNextRrn(ref rrn);
         string successStan = GetNextStan(ref stan);
 
@@ -488,7 +395,7 @@ public class DataGenerator
             stan: successStan,
             rrn: successRrn,
             authCode: _rand.Next(100000, 999999).ToString(),
-            respCode: "00", // approved
+            respCode: "00",
             mcc: onlineMerchant.MCC,
             country: onlineMerchant.Country,
             entryMode: "012",
@@ -500,30 +407,15 @@ public class DataGenerator
             fraudReason: "Card Testing Pattern"
         );
 
-        DateTime settleDate = successTime.Date.AddDays(_rand.Next(1, 3));
-        AddClearingRow(clearings,
-            clearingId: Guid.NewGuid(),
-            pan: pan,
-            rrn: successRrn,
-            settleAmount: bigAmount,
-            currency: "840",
-            interchange: bigAmount * 0.015m,
-            settleDate: settleDate,
-            status: "ChargedBack", // almost guaranteed chargeback on success card testing
-            recon: "Matched"
-        );
-
         return declineCount + 1;
     }
 
-    private int GenerateHighRiskOffHoursPattern(DataTable auths, DataTable clearings, string pan, DateTime baseTime, ref long stan, ref long rrn)
+    private int GenerateHighRiskOffHoursPattern(DataTable auths, string pan, DateTime baseTime, ref long stan, ref long rrn)
     {
-        // Transaction at high-risk MCC (7995 betting or 5944 jewelry) at 3 AM local time with high amount
-        // Set local time to 3 AM by shifting baseTime
         DateTime local3Am = new(baseTime.Year, baseTime.Month, baseTime.Day, 3, _rand.Next(0, 60), _rand.Next(0, 60));
         var highRiskMerch = _merchantPool.Find(m => m.MCC == "7995" || m.MCC == "5944") ?? _merchantPool[0];
 
-        decimal amount = (decimal)(_rand.NextDouble() * 1500 + 800); // $800 - $2300
+        decimal amount = (decimal)(_rand.NextDouble() * 1500 + 800);
 
         string rrnStr = GetNextRrn(ref rrn);
         string stanStr = GetNextStan(ref stan);
@@ -541,26 +433,13 @@ public class DataGenerator
             respCode: "00",
             mcc: highRiskMerch.MCC,
             country: highRiskMerch.Country,
-            entryMode: "012", // Online/CNP
+            entryMode: "012",
             tid: highRiskMerch.TID,
             mid: highRiskMerch.MID,
             location: highRiskMerch.NameAndLocation,
             currency: "840",
             isFraud: true,
             fraudReason: "High-Risk MCC Off-Hours Velocity"
-        );
-
-        DateTime settleDate = local3Am.Date.AddDays(_rand.Next(1, 3));
-        AddClearingRow(clearings,
-            clearingId: Guid.NewGuid(),
-            pan: pan,
-            rrn: rrnStr,
-            settleAmount: amount,
-            currency: "840",
-            interchange: amount * 0.015m,
-            settleDate: settleDate,
-            status: "ChargedBack",
-            recon: "Matched"
         );
 
         return 1;
@@ -581,7 +460,7 @@ public class DataGenerator
             stan,
             txnTime.TimeOfDay,
             txnTime.Date,
-            "2912", // F14: Expiry Dec 2029 (YYMM)
+            "2912",
             mcc,
             country,
             entryMode,
@@ -614,22 +493,6 @@ public class DataGenerator
             rrn++;
         }
         return rrn.ToString();
-    }
-
-    private static void AddClearingRow(DataTable table, Guid clearingId, string pan, string rrn, 
-        decimal settleAmount, string currency, decimal interchange, DateTime settleDate, string status, string recon)
-    {
-        table.Rows.Add(
-            clearingId,
-            pan,
-            rrn,
-            settleAmount,
-            currency,
-            interchange,
-            settleDate,
-            status,
-            recon
-        );
     }
 }
 

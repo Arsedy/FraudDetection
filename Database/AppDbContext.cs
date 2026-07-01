@@ -10,7 +10,6 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<AuthorizationTransaction> AuthorizationTransactions { get; set; } = null!;
-    public DbSet<ClearingTransaction> ClearingTransactions { get; set; } = null!;
     public DbSet<FraudAlert> FraudAlerts { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -25,12 +24,14 @@ public class AppDbContext : DbContext
             .OnDelete(DeleteBehavior.Restrict);
 
         // Mark F37_RRN as unique index in AuthorizationTransactions
+        //F37—RETRIEVAL REFERENCE NUMBER
         modelBuilder.Entity<AuthorizationTransaction>()
             .HasIndex(a => a.F37_RRN)
             .IsUnique();
 
         // Configure indexes on AuthorizationTransactions for performance
         modelBuilder.Entity<AuthorizationTransaction>()
-            .HasIndex(a => new { a.F2_PAN, a.F7_TxnDateTime });
+            .HasIndex(a => new { a.F2_PAN, a.F7_TxnDateTime });//Primary Account Number
+            
     }
 }

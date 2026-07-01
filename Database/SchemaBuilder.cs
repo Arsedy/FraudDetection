@@ -98,25 +98,7 @@ public class SchemaBuilder
             cmd.ExecuteNonQuery();
         }
 
-        // 2. Create ClearingTransactions Table
-        string createClearingTableSql = @"
-        CREATE TABLE IF NOT EXISTS ClearingTransactions (
-            ClearingId UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            F2_PAN VARCHAR(19) NOT NULL,
-            F37_RRN CHAR(12) NOT NULL,
-            SettlementAmount DECIMAL(18,2) NOT NULL,
-            SettlementCurrency CHAR(3) NOT NULL,
-            InterchangeFee DECIMAL(18,4) NOT NULL,
-            SettlementDate DATE NOT NULL,
-            ClearingStatus VARCHAR(20) NOT NULL,
-            ReconciliationStatus VARCHAR(20) NOT NULL,
-            CONSTRAINT FK_Clearing_Authorization FOREIGN KEY (F37_RRN) REFERENCES AuthorizationTransactions(F37_RRN)
-        );";
 
-        using (var cmd = new NpgsqlCommand(createClearingTableSql, connection))
-        {
-            cmd.ExecuteNonQuery();
-        }
 
         // 2b. Create FraudAlerts Table
         string createFraudAlertsTableSql = @"

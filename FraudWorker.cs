@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using FraudDetectionWorker.Rules;
 
 namespace FraudDetectionWorker;
 
@@ -25,23 +26,8 @@ public class FraudWorker : BackgroundService
         {
             _logger.LogInformation("Running fraud detection rules check...");
 
-            foreach (var rule in _rules)
-            {
-                try
-                {
-                    bool isSatisfied = await rule.IsRuleSatisfiedAsync(stoppingToken);
-                    if (!isSatisfied)
-                    {
-                        _logger.LogWarning("Fraud rule '{RuleName}' was NOT satisfied!", rule.Name);
-                    }
-                }
-                catch (System.Exception ex)
-                {
-                    _logger.LogError(ex, "Error executing rule '{RuleName}'", rule.Name);
-                }
-            }
 
-            // Wait 24 hours between runs as specified in README
+            // Wait 24 hours between runs as specified
             await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
         }
     }
