@@ -69,7 +69,7 @@ docker run --name postgres_db -e POSTGRES_PASSWORD=YourSecurePassword123! -p 543
 ### 3. Clone and Download
 Clone the repository to your local machine:
 ```bash
-git clone <repository-url>
+git clone https://github.com/Arsedy/FraudDetection
 cd FraudDetectionWorker
 ```
 
