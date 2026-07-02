@@ -13,32 +13,43 @@ The purpose of this project is to simulate and monitor credit card transaction f
 ## 🏗️ Folder Structure
 
 ```text
-FraudDetectionWorker/
+FraudDetection/ (Solution Root)
 │
-├── Database/
-│   ├── AppDbContext.cs        # EF Core DbContext mapping tables & indexes
-│   └── SchemaBuilder.cs       # Automatic database & schema creation helper
+├── FraudDetection.sln         # Solution file
+├── README.md                  # Main documentation
+├── .gitignore                 # Exclusion rules for git
 │
-├── Models/
-│   ├── AuthorizationTransaction.cs # EF model for ISO 8583 transactions
-│   └── FraudAlert.cs          # EF model for flagged suspicious transactions
+├── FraudDetectionWorker/      # 📁 Worker Service Project
+│   ├── FraudDetectionWorker.csproj
+│   ├── Program.cs             # Main entry point (commands parsing & DI setup)
+│   ├── FraudWorker.cs         # Background worker service (runs rules check loops)
+│   ├── appsettings.json       # Default configuration & connection strings
+│   │
+│   ├── Database/
+│   │   ├── AppDbContext.cs    # EF Core DbContext mapping tables & indexes
+│   │   └── SchemaBuilder.cs   # Automatic database & schema creation helper
+│   ├── Models/
+│   │   ├── AuthorizationTransaction.cs # EF model for ISO 8583 transactions
+│   │   ├── FraudAlert.cs      # EF model for flagged suspicious transactions
+│   │   └── LastFraudCheckTime.cs # Tracks last timestamp processed
+│   ├── Repositories/          # Repository pattern implementation
+│   │   ├── ITransactionRepository.cs
+│   │   └── TransactionRepository.cs
+│   ├── Rules/
+│   │   ├── IFraudRule.cs      # Interface for all fraud rules
+│   │   └── VelocityRule.cs    # Rule checking card velocity limits
+│   ├── Seeding/
+│   │   ├── DataGenerator.cs   # Mock data generator (Luhn check, fraud patterns)
+│   │   ├── DataSeeder.cs      # High-speed binary COPY seeder for PostgreSQL
+│   │   └── SeedRunner.cs      # Orchestrates DB schema build and seeding execution
+│   └── Services/              # Application business services
+│       ├── FraudDetectionEngine.cs
+│       └── IFraudDetectionEngine.cs
 │
-├── Rules/
-│   ├── IFraudRule.cs          # Interface for all fraud rules
-│   └── VelocityRule.cs        # Rule checking card velocity limits
-│
-├── Seeding/
-│   ├── DataGenerator.cs       # Mock data generator (Luhn check, fraud patterns)
-│   └── DataSeeder.cs          # High-speed binary COPY seeder for PostgreSQL
-│
-├── Repositories/              # Interface & implementation of data access
-├── Services/                  # Application business services
-├── Tests/                     # xUnit unit tests folder
-│
-├── Program.cs                 # Main entry point (commands parsing & DI setup)
-├── FraudWorker.cs             # Background worker service (runs rules check loops)
-├── appsettings.json           # Default configuration & connection strings
-└── .gitignore                 # Exclusion rules for Rider, VS, Code, OS, and builds
+└── Tests/                     # 📁 Unit Tests Project
+    ├── Tests.csproj           # xUnit test configuration
+    ├── FraudTestData.cs       # Static datasets for testing fraud patterns
+    └── UnitTest1.cs           # Velocity rule unit test
 ```
 
 ---
@@ -69,21 +80,21 @@ docker run --name postgres_db -e POSTGRES_PASSWORD=YourSecurePassword123! -p 543
 ### 3. Clone and Download
 Clone the repository to your local machine:
 ```bash
-git clone https://github.com/Arsedy/FraudDetectionWorker
-cd FraudDetectionWorker
+git clone https://github.com/Arsedy/FraudDetection
+cd FraudDetection
 ```
 
 ### 4. Database Setup & Seeding
 To automatically create the database, tables, indexes, and seed it with 1,000,000 mock transactions, run the seeding command:
 ```bash
-dotnet run -- --seed --count 1000000
+dotnet run --project FraudDetectionWorker -- --seed --count 1000000
 ```
 *(The seeder will check existing STAN/RRN counters in the database on consecutive runs and append data chronologically without duplicate key collisions.)*
 
 ### 5. Running the Background Service
 To start the background worker service to monitor and check rules:
 ```bash
-dotnet run
+dotnet run --project FraudDetectionWorker
 ```
 
 ### 6. Running Tests
