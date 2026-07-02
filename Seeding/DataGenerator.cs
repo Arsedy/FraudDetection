@@ -156,9 +156,6 @@ public class DataGenerator
         auths.Columns.Add("F42_MID", typeof(string));
         auths.Columns.Add("F43_MerchantLoc", typeof(string));
         auths.Columns.Add("F49_CurrencyCode", typeof(string));
-        auths.Columns.Add("IsFraud", typeof(bool));
-        auths.Columns.Add("FraudRuleReason", typeof(string));
-
         return auths;
     }
 
@@ -235,9 +232,7 @@ public class DataGenerator
             tid: merchant.TID,
             mid: merchant.MID,
             location: merchant.NameAndLocation,
-            currency: "840",
-            isFraud: false,
-            fraudReason: null
+            currency: "840"
         );
     }
 
@@ -275,9 +270,7 @@ public class DataGenerator
                 tid: merchant.TID,
                 mid: merchant.MID,
                 location: merchant.NameAndLocation,
-                currency: "840",
-                isFraud: true,
-                fraudReason: "CNP Velocity Attack"
+                currency: "840"
             );
         }
 
@@ -308,9 +301,7 @@ public class DataGenerator
             tid: usaMerchant.TID,
             mid: usaMerchant.MID,
             location: usaMerchant.NameAndLocation,
-            currency: "840",
-            isFraud: true,
-            fraudReason: "Impossible Travel Anomaly"
+            currency: "840"
         );
 
         DateTime travelTxnTime = baseTime.AddMinutes(_rand.Next(25, 45));
@@ -336,9 +327,7 @@ public class DataGenerator
             tid: euroMerchant.TID,
             mid: euroMerchant.MID,
             location: euroMerchant.NameAndLocation,
-            currency: euroMerchant.Country == "792" ? "949" : "978",
-            isFraud: true,
-            fraudReason: "Impossible Travel Anomaly"
+            currency: euroMerchant.Country == "792" ? "949" : "978"
         );
 
         return 2;
@@ -374,9 +363,7 @@ public class DataGenerator
                 tid: onlineMerchant.TID,
                 mid: onlineMerchant.MID,
                 location: onlineMerchant.NameAndLocation,
-                currency: "840",
-                isFraud: true,
-                fraudReason: "Card Testing Pattern"
+                currency: "840"
             );
         }
 
@@ -402,9 +389,7 @@ public class DataGenerator
             tid: onlineMerchant.TID,
             mid: onlineMerchant.MID,
             location: onlineMerchant.NameAndLocation,
-            currency: "840",
-            isFraud: true,
-            fraudReason: "Card Testing Pattern"
+            currency: "840"
         );
 
         return declineCount + 1;
@@ -437,9 +422,7 @@ public class DataGenerator
             tid: highRiskMerch.TID,
             mid: highRiskMerch.MID,
             location: highRiskMerch.NameAndLocation,
-            currency: "840",
-            isFraud: true,
-            fraudReason: "High-Risk MCC Off-Hours Velocity"
+            currency: "840"
         );
 
         return 1;
@@ -447,8 +430,7 @@ public class DataGenerator
 
     private static void AddAuthRow(DataTable table, Guid transactionId, string mti, string pan, string procCode, 
         decimal amount, DateTime txnTime, string stan, string rrn, string? authCode, string respCode, 
-        string mcc, string country, string entryMode, string tid, string mid, string location, string currency, 
-        bool isFraud, string? fraudReason)
+        string mcc, string country, string entryMode, string tid, string mid, string location, string currency)
     {
         table.Rows.Add(
             transactionId,
@@ -470,9 +452,7 @@ public class DataGenerator
             tid,
             mid,
             location,
-            currency,
-            isFraud,
-            string.IsNullOrEmpty(fraudReason) ? DBNull.Value : fraudReason
+            currency
         );
     }
 

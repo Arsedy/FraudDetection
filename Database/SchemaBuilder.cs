@@ -88,9 +88,7 @@ public class SchemaBuilder
             F41_TID CHAR(8) NOT NULL,
             F42_MID VARCHAR(15) NOT NULL,
             F43_MerchantLoc VARCHAR(40) NOT NULL,
-            F49_CurrencyCode CHAR(3) NOT NULL,
-            IsFraud BOOLEAN NOT NULL DEFAULT FALSE,
-            FraudRuleReason VARCHAR(100) NULL
+            F49_CurrencyCode CHAR(3) NOT NULL
         );";
 
         using (var cmd = new NpgsqlCommand(createAuthTableSql, connection))
@@ -130,7 +128,7 @@ public class SchemaBuilder
         // 4. Create composite analytical index for covering queries (equivalent to Columnstore optimization on PG)
         string createCoveringIndexSql = @"
         CREATE INDEX IF NOT EXISTS IX_Auth_Analytics ON AuthorizationTransactions (
-            F2_PAN, F4_AmountTxn, F7_TxnDateTime, F18_MCC, F19_AcqCountry, F22_POSEntryMode, IsFraud
+            F2_PAN, F4_AmountTxn, F7_TxnDateTime, F18_MCC, F19_AcqCountry, F22_POSEntryMode
         );";
 
         using (var cmd = new NpgsqlCommand(createCoveringIndexSql, connection))

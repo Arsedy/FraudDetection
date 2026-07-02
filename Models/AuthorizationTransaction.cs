@@ -82,11 +82,4 @@ public class AuthorizationTransaction
     [Column("f49_currencycode")]
     [MaxLength(3)]
     public string F49_CurrencyCode { get; set; } = null!;
-
-    [Column("isfraud")]
-    public bool IsFraud { get; set; }
-
-    [Column("fraudrulereason")]
-    [MaxLength(100)]
-    public string? FraudRuleReason { get; set; }
 }
