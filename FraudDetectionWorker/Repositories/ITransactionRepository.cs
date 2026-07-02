@@ -5,9 +5,8 @@ namespace FraudDetectionWorker.Repositories;
 public interface ITransactionRepository
 {
     Task<List<AuthorizationTransaction>> GetCardHistoryAsync(
-        string cardNo, //F2_PAN ?
+        string pan,
         DateTime targetTime, 
-        TimeSpan windowBefore, 
-        TimeSpan windowAfter
+        TimeSpan window
     );
 }

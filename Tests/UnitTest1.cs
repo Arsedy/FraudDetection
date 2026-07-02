@@ -22,6 +22,19 @@ public class UnitTest1
         // Assert
         //Should return a RuleResult with the rule name and description, indicating that the rule is not satisfied
         Assert.False(result._ruleName == string.Empty);
+    }
 
+    [Fact]
+    public async Task TestTravelRule_ShouldTrigger_WhenTransactionLocationsDiffer()
+    {
+        // Arrange
+        var rule = new TravelRule();
+        var transactions = FraudTestData.GetImpossibleTravelPattern();
+
+        // Act
+        var result = await rule.IsRuleSatisfiedAsync(transactions, CancellationToken.None);
+
+        // Assert
+        Assert.False(result._ruleName == string.Empty);
     }
 }

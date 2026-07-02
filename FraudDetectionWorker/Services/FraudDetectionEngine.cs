@@ -16,6 +16,6 @@ public class FraudDetectionEngine : IFraudDetectionEngine
 
     public async Task ProcessTransactionAsync(IFraudRule rule, AuthorizationTransaction transaction, CancellationToken cancellationToken)
     {
-        
+        await Task.Yield(); // Simulate asynchronous operation
     }
 }

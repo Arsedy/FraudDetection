@@ -11,18 +11,17 @@ public class TransactionRepository : ITransactionRepository
         _dbContext = dbContext;
     }
 
-    public async Task<List<AuthorizationTransaction>> GetCardHistoryAsync( //returns a list of transactions for a specific card number within a specified time window
-        string cardNo, //F2_PAN ?
+    public async Task<List<AuthorizationTransaction>> GetCardHistoryAsync(
+        string pan,
         DateTime targetTime, 
-        TimeSpan windowBefore, 
-        TimeSpan windowAfter
+        TimeSpan window
     )
     {
-        var startTime = targetTime - windowBefore;
-        var endTime = targetTime + windowAfter;
+        var startTime = targetTime - window;
+        var endTime = targetTime;
 
         return await _dbContext.AuthorizationTransactions
-            .Where(t => t.F2_PAN == cardNo && t.F7_TxnDateTime >= startTime && t.F7_TxnDateTime <= endTime)
+            .Where(t => t.F2_PAN == pan && t.F7_TxnDateTime >= startTime && t.F7_TxnDateTime <= endTime)
             .OrderBy(t => t.F7_TxnDateTime)
             .ToListAsync();
     }
