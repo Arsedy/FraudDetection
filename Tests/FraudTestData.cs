@@ -157,10 +157,12 @@ public static class FraudTestData
         return list;
     }
 
-    public static List<AuthorizationTransaction> GetHighRiskOffHoursPattern(string pan = "4111222233337777")
+    public static List<AuthorizationTransaction> GetSpikePattern(string pan = "4111222233337777")
     {
-        // 3:15 AM local time
-        var offHoursDateTime = new DateTime(BaseTime.Year, BaseTime.Month, BaseTime.Day, 3, 15, 0, DateTimeKind.Utc);
+        var time1 = BaseTime;
+        var time2 = BaseTime.AddHours(1);
+        var time3 = BaseTime.AddHours(2);
+        var time4 = BaseTime.AddHours(3);
 
         return new List<AuthorizationTransaction>
         {
@@ -169,20 +171,165 @@ public static class FraudTestData
                 Mti = "0100",
                 F2_PAN = pan,
                 F3_ProcCode = "000000",
-                F4_AmountTxn = 1200.00m, // Large amount
-                F7_TxnDateTime = offHoursDateTime,
-                F12_LocalTime = new TimeOnly(3, 15, 0),
-                F13_LocalDate = DateOnly.FromDateTime(offHoursDateTime),
+                F4_AmountTxn = 25.00m, // Normal transaction amount
+                F7_TxnDateTime = time1,
+                F11_STAN = "000051",
+                F12_LocalTime = TimeOnly.FromDateTime(time1),
+                F13_LocalDate = DateOnly.FromDateTime(time1),
                 F14_ExpDate = "2912",
-                F18_MCC = "7995", // High-risk category (Casinos/Betting)
+                F18_MCC = "5814", // Starbucks
+                F19_AcqCountry = "840",
+                F22_POSEntryMode = "051",
+                F37_RRN = "200000000051",
+                F38_AuthCode = "111111",
+                F39_ResponseCode = "00",
+                F41_TID = "TID00051",
+                F42_MID = "MID000051",
+                F43_MerchantLoc = "STARBUCKS             SEATTLE      WA",
+                F49_CurrencyCode = "840"
+            },
+            new() {
+                TransactionId = Guid.NewGuid(),
+                Mti = "0100",
+                F2_PAN = pan,
+                F3_ProcCode = "000000",
+                F4_AmountTxn = 45.50m, // Normal transaction amount
+                F7_TxnDateTime = time2,
+                F11_STAN = "000052",
+                F12_LocalTime = TimeOnly.FromDateTime(time2),
+                F13_LocalDate = DateOnly.FromDateTime(time2),
+                F14_ExpDate = "2912",
+                F18_MCC = "5311", // Target
+                F19_AcqCountry = "840",
+                F22_POSEntryMode = "051",
+                F37_RRN = "200000000052",
+                F38_AuthCode = "222222",
+                F39_ResponseCode = "00",
+                F41_TID = "TID00052",
+                F42_MID = "MID000052",
+                F43_MerchantLoc = "TARGET                SEATTLE      WA",
+                F49_CurrencyCode = "840"
+            },
+            new() {
+                TransactionId = Guid.NewGuid(),
+                Mti = "0100",
+                F2_PAN = pan,
+                F3_ProcCode = "000000",
+                F4_AmountTxn = 30.00m, // Normal transaction amount
+                F7_TxnDateTime = time3,
+                F11_STAN = "000053",
+                F12_LocalTime = TimeOnly.FromDateTime(time3),
+                F13_LocalDate = DateOnly.FromDateTime(time3),
+                F14_ExpDate = "2912",
+                F18_MCC = "5814",
+                F19_AcqCountry = "840",
+                F22_POSEntryMode = "051",
+                F37_RRN = "200000000053",
+                F38_AuthCode = "333333",
+                F39_ResponseCode = "00",
+                F41_TID = "TID00053",
+                F42_MID = "MID000053",
+                F43_MerchantLoc = "STARBUCKS             SEATTLE      WA",
+                F49_CurrencyCode = "840"
+            },
+            new() {
+                TransactionId = Guid.NewGuid(),
+                Mti = "0100",
+                F2_PAN = pan,
+                F3_ProcCode = "000000",
+                F4_AmountTxn = 2500.00m, // MASSIVE SPIKE!
+                F7_TxnDateTime = time4,
+                F11_STAN = "000054",
+                F12_LocalTime = TimeOnly.FromDateTime(time4),
+                F13_LocalDate = DateOnly.FromDateTime(time4),
+                F14_ExpDate = "2912",
+                F18_MCC = "5732", // Apple Store
                 F19_AcqCountry = "840",
                 F22_POSEntryMode = "012",
-                F37_RRN = "200000000030",
-                F38_AuthCode = "112233",
+                F37_RRN = "200000000054",
+                F38_AuthCode = "444444",
                 F39_ResponseCode = "00",
-                F41_TID = "TID00005",
-                F42_MID = "MID0000005",
-                F43_MerchantLoc = "CASINO GRANDE         LAS VEGAS    NV",
+                F41_TID = "TID00054",
+                F42_MID = "MID000054",
+                F43_MerchantLoc = "APPLE STORE           SEATTLE      WA",
+                F49_CurrencyCode = "840"
+            }
+        };
+    }
+
+
+    public static List<AuthorizationTransaction> GetNormalTransactions(string pan = "4111222233338888")
+    {
+        var time1 = BaseTime;
+        var time2 = BaseTime.AddHours(2.5);
+        var time3 = BaseTime.AddHours(6);
+
+        return new List<AuthorizationTransaction>
+        {
+            new() {
+                TransactionId = Guid.NewGuid(),
+                Mti = "0100",
+                F2_PAN = pan,
+                F3_ProcCode = "000000",
+                F4_AmountTxn = 15.50m,
+                F7_TxnDateTime = time1,
+                F11_STAN = "000101",
+                F12_LocalTime = new TimeOnly(10, 0, 0), // 10:00 AM
+                F13_LocalDate = DateOnly.FromDateTime(time1),
+                F14_ExpDate = "2912",
+                F18_MCC = "5814", // Starbucks
+                F19_AcqCountry = "840", // USA
+                F22_POSEntryMode = "051",
+                F37_RRN = "300000000101",
+                F38_AuthCode = "123456",
+                F39_ResponseCode = "00", // Approved
+                F41_TID = "TID00011",
+                F42_MID = "MID0000101",
+                F43_MerchantLoc = "STARBUCKS             SEATTLE      WA",
+                F49_CurrencyCode = "840"
+            },
+            new() {
+                TransactionId = Guid.NewGuid(),
+                Mti = "0100",
+                F2_PAN = pan,
+                F3_ProcCode = "000000",
+                F4_AmountTxn = 85.00m,
+                F7_TxnDateTime = time2,
+                F11_STAN = "000102",
+                F12_LocalTime = new TimeOnly(12, 30, 0), // 12:30 PM
+                F13_LocalDate = DateOnly.FromDateTime(time2),
+                F14_ExpDate = "2912",
+                F18_MCC = "5311", // Target
+                F19_AcqCountry = "840", // USA
+                F22_POSEntryMode = "051",
+                F37_RRN = "300000000102",
+                F38_AuthCode = "654321",
+                F39_ResponseCode = "00", // Approved
+                F41_TID = "TID00012",
+                F42_MID = "MID0000102",
+                F43_MerchantLoc = "TARGET                SEATTLE      WA",
+                F49_CurrencyCode = "840"
+            },
+            new() {
+                TransactionId = Guid.NewGuid(),
+                Mti = "0100",
+                F2_PAN = pan,
+                F3_ProcCode = "000000",
+                F4_AmountTxn = 120.00m,
+                F7_TxnDateTime = time3,
+                F11_STAN = "000103",
+                F12_LocalTime = new TimeOnly(16, 0, 0), // 4:00 PM
+                F13_LocalDate = DateOnly.FromDateTime(time3),
+                F14_ExpDate = "2912",
+                F18_MCC = "5942", // Amazon
+                F19_AcqCountry = "840", // USA
+                F22_POSEntryMode = "012", // CNP
+                F37_RRN = "300000000103",
+                F38_AuthCode = "987654",
+                F39_ResponseCode = "00", // Approved
+                F41_TID = "TID00013",
+                F42_MID = "MID0000103",
+                F43_MerchantLoc = "AMAZON.COM            SEATTLE      WA",
                 F49_CurrencyCode = "840"
             }
         };
