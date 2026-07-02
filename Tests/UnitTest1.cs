@@ -37,4 +37,19 @@ public class UnitTest1
         // Assert
         Assert.False(result._ruleName == string.Empty);
     }
+
+    [Fact]
+    public async Task CardTestingRule_ShouldTrigger_WhenAcceptedAvgExceedsDeclinedAvg()
+    {
+        // Arrange
+        var rule = new CardTestingRule();
+        var transactions = FraudTestData.GetCardTestingPattern();
+
+        // Act
+        var result = await rule.IsRuleSatisfiedAsync(transactions, CancellationToken.None);
+
+        // Assert
+        Assert.False(result._ruleName == string.Empty);
+
+    }
 }
