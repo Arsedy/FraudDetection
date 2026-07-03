@@ -21,10 +21,12 @@ public class RuleResult
 {
     public string _ruleName { get; set;} 
     public string _description { get; set;} 
+    public Guid? TransactionId { get; set; } // The ID of the transaction flagged as fraud
     public bool IsSatisfied => string.IsNullOrEmpty(_ruleName); //if the rule is satisfied, it will return true, otherwise it will return false
-    public RuleResult(string ruleName, string description) //consturctor to initialize the properties
+    public RuleResult(string ruleName, string description , Guid? transactionId) //consturctor to initialize the properties
     {
         _ruleName = ruleName;
         _description = description;
+        TransactionId = transactionId;
     }
 }

@@ -104,9 +104,9 @@ public class SchemaBuilder
             alertid UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             transactionid UUID NOT NULL,
             f2_pan VARCHAR(19) NOT NULL,
-            userid VARCHAR(50) NULL,
             rulename VARCHAR(50) NOT NULL,
-            status VARCHAR(20) NOT NULL DEFAULT 'Open',
+            description VARCHAR(250) NOT NULL,
+            isreviewed BOOLEAN NOT NULL DEFAULT FALSE,
             flaggedat TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
             CONSTRAINT FK_FraudAlert_Transaction FOREIGN KEY (transactionid) REFERENCES AuthorizationTransactions(TransactionId)
         );";

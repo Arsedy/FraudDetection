@@ -16,7 +16,7 @@ public class SpikeRule : IFraudRule
 
         if (transactions == null || !transactions.Any())
         {
-            return new RuleResult(string.Empty, string.Empty);
+            return new RuleResult(string.Empty, string.Empty , null);
         }
 
         var sortedTransactions = transactions.OrderBy(t => t.F4_AmountTxn).ToList();
@@ -38,14 +38,14 @@ public class SpikeRule : IFraudRule
         decimal threshold = medianAmount * multiplier;
 
 
-        var latestTransaction = transactions.LastOrDefault(); // Veyahut tarihe göre sıralayıp en sonuncusunu alabilirsiniz
-        
+        var latestTransaction = transactions.LastOrDefault(); 
+
         if (latestTransaction != null && latestTransaction.F4_AmountTxn > threshold)
         {
-            return new RuleResult(Name, Description);
+            return new RuleResult(Name, Description , latestTransaction.TransactionId);
         }
         
 
-        return new RuleResult(string.Empty, string.Empty); // Return an empty RuleResult if the rule is satisfied
+        return new RuleResult(string.Empty, string.Empty , null); // Return an empty RuleResult if the rule is satisfied
     }
 }

@@ -18,17 +18,16 @@ public class FraudAlert
     [MaxLength(19)]
     public string F2_PAN { get; set; } = null!;
 
-    [Column("userid")]
-    [MaxLength(50)]
-    public string? UserId { get; set; }
-
     [Column("rulename")]
     [MaxLength(50)]
     public string RuleName { get; set; } = null!;
 
-    [Column("status")]
-    [MaxLength(20)]
-    public string Status { get; set; } = "Open"; // Open, FalsePositive, ConfirmedFraud
+    [Column("description")]
+    [MaxLength(250)]
+    public string Description { get; set; } = null!;
+
+    [Column("isreviewed")]
+    public bool IsReviewed { get; set; } = false;
 
     [Column("flaggedat")]
     public DateTime FlaggedAt { get; set; } = DateTime.UtcNow;

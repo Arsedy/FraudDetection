@@ -41,10 +41,10 @@ public class CardTestingRule : IFraudRule
         var accepted_avg = accepted_count > 0 ? accepted / accepted_count : 0;
         if (accepted_avg > decline_avg * 5m && decline_count> accepted_count) // if the average accepted transaction amount is more than 5 times the average declined transaction amount, we consider it a card testing pattern
         {
-            return new RuleResult(Name, Description);
+            return new RuleResult(Name, Description , transactions[decline_count].TransactionId); // Return the transaction ID of the first accepted transaction after the declines.
         }
 
-        return new RuleResult(string.Empty, string.Empty); // Return an empty RuleResult if the rule is satisfied
+        return new RuleResult(string.Empty, string.Empty , null); // Return an empty RuleResult if the rule is satisfied
 
     }
     
