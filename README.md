@@ -21,8 +21,8 @@ FraudDetection/ (Solution Root)
 │
 ├── FraudDetectionWorker/      # 📁 Worker Service Project
 │   ├── FraudDetectionWorker.csproj
-│   ├── Program.cs             # Main entry point (commands parsing & DI setup)
-│   ├── FraudWorker.cs         # Background worker service (runs rules check loops)
+│   ├── Program.cs             # Main entry point (commands parsing & Dependency Injection setup)
+│   ├── FraudWorker.cs         # Background worker service (creates DI scopes & runs rules loop)
 │   ├── appsettings.json       # Default configuration & connection strings
 │   │
 │   ├── Database/
@@ -33,10 +33,15 @@ FraudDetection/ (Solution Root)
 │   │   ├── FraudAlert.cs      # EF model for flagged suspicious transactions
 │   │   └── LastFraudCheckTime.cs # Tracks last timestamp processed
 │   ├── Repositories/          # Repository pattern implementation
+│   │   ├── IFraudAlertRepository.cs
+│   │   ├── FraudAlertRepository.cs
 │   │   ├── ITransactionRepository.cs
 │   │   └── TransactionRepository.cs
 │   ├── Rules/
 │   │   ├── IFraudRule.cs      # Interface for all fraud rules
+│   │   ├── CardTestingRule.cs # Rule checking accepted/declined ratio
+│   │   ├── SpikeRule.cs       # Rule checking massive amount spikes
+│   │   ├── TravelRule.cs      # Rule checking geographic impossible travel
 │   │   └── VelocityRule.cs    # Rule checking card velocity limits
 │   ├── Seeding/
 │   │   ├── DataGenerator.cs   # Mock data generator (Luhn check, fraud patterns)
@@ -61,6 +66,18 @@ FraudDetection/ (Solution Root)
 * **Database Optimization**: Implements B-Tree compound indexing on `(f2_pan, f7_txndatetime)` to fetch a card's historical swipes in milliseconds, bypassing the need for scanning the entire table.
 * **Separation of Concerns**: Uses the **Repository Pattern** to separate raw database query implementation from pure business rule checking, making unit testing clean and mockable.
 * **Robust State Tracking**: Designed to run via a **Timestamp Sliding Window** or **Status Flagging**, preventing repetitive scans of older transactions and saving memory.
+
+---
+
+## 🔄 Architecture & Workflow
+
+The application leverages .NET Dependency Injection to cleanly separate concerns across the background service lifecycle:
+
+1. **`Program.cs` (Configuration):** Registers all database contexts (Scoped), Repositories (Scoped), the `FraudDetectionEngine` (Scoped), and dynamically injects multiple `IFraudRule` implementations. It also registers the `FraudWorker` as a Singleton Hosted Service.
+2. **`FraudWorker.cs` (Scheduler):** Runs continuously in the background. Because it is a Singleton, it uses `IServiceScopeFactory` to create a fresh Dependency Injection scope for each processing cycle, safely retrieving scoped database services without memory leaks.
+3. **`FraudDetectionEngine.cs` (Orchestrator):** Requests batched transaction data from the `ITransactionRepository`, groups the historical data by card (`F2_PAN`), and dynamically evaluates the history against the injected collection of `IFraudRule` implementations.
+4. **`IFraudRule` (Business Logic):** Pure logic classes (e.g., `VelocityRule`, `TravelRule`, `SpikeRule`, `CardTestingRule`). If a threshold is exceeded, the rule returns a `RuleResult` containing the specific `TransactionId` that caused the breach.
+5. **`FraudAlertRepository` (Persistence):** If the Engine detects a fraud rule breach, it utilizes this repository to log the details to the `fraudalerts` table for analyst review.
 
 ---
 
