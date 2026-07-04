@@ -36,7 +36,7 @@ public class DataSeeder
 
         int seededCount = 0;
         int batchIndex = 1;
-        DateTime baseDate = DateTime.UtcNow.AddDays(-90);
+        DateTime baseDate = DateTime.UtcNow.Date.AddDays(-1); // Start at yesterday midnight
 
         while (seededCount < totalCount)
         {

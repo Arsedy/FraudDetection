@@ -81,7 +81,7 @@ The application leverages .NET Dependency Injection to cleanly separate concerns
 
 ---
 
-## 🚀 How to Setup and Run
+## 🚀 How to Setup and Test the Pipeline
 
 ### 1. Prerequisites
 Ensure you have the following installed on your machine:
@@ -89,33 +89,53 @@ Ensure you have the following installed on your machine:
 * [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
 ### 2. Start PostgreSQL Container
-Spin up a local PostgreSQL container using Docker:
+Spin up a local PostgreSQL container using Docker. This runs the database in the background:
 ```bash
 docker run --name postgres_db -e POSTGRES_PASSWORD=YourSecurePassword123! -p 5432:5432 -d postgres:latest
 ```
 
-### 3. Clone and Download
-Clone the repository to your local machine:
-```bash
-git clone https://github.com/Arsedy/FraudDetection
-cd FraudDetection
-```
+### 3. Testing the System (Step-by-Step)
+Because the background worker analyzes "yesterday's" data, the seeder is specifically designed to generate transactions mapping exactly to the last 24 hours. Exactly **10%** of the generated data will be fraudulent, equally distributed across all 4 rules.
 
-### 4. Database Setup & Seeding
-To automatically create the database, tables, indexes, and seed it with 1,000,000 mock transactions, run the seeding command:
+**Step A: Seed the Database**
+To automatically create the database schemas and seed it with 100,000 mock transactions, run:
 ```bash
-dotnet run --project FraudDetectionWorker -- --seed --count 1000000
+dotnet run --project FraudDetectionWorker -- --seed --count 100000
 ```
-*(The seeder will check existing STAN/RRN counters in the database on consecutive runs and append data chronologically without duplicate key collisions.)*
+*(This takes ~3 seconds. It will automatically generate `fraud_detection` DB if it doesn't exist).*
 
-### 5. Running the Background Service
-To start the background worker service to monitor and check rules:
+**Step B: Run the Background Worker**
+Start the background engine to process the data:
 ```bash
 dotnet run --project FraudDetectionWorker
 ```
+The worker will boot up, analyze the 100,000 transactions, flag the 10,000 fraudulent patterns it detects, insert them into the `fraudalerts` table, and then sleep. You can press `Ctrl+C` to stop it once it says "Sleeping for 24 hours".
 
-### 6. Running Tests
-To run unit tests:
+**Step C: View the Results (DBeaver/SQL)**
+You can connect to `localhost:5432` with username `postgres` and password `YourSecurePassword123!` using any SQL client (like DBeaver) to view the `fraudalerts` table.
+
+Alternatively, you can instantly see a summary of the triggered alerts right in your terminal by running this Docker command:
+```bash
+docker exec postgres_db psql -U postgres -d fraud_detection -c "SELECT rulename, count(*) FROM fraudalerts GROUP BY rulename;"
+```
+
+**Verify the 10% Fraud Hit Rate**
+If you want to verify that the mock data generator correctly seeded 10% fraudulent activity, you can count the unique credit cards (`F2_PAN`) in both tables. This query shows how many distinct cards were processed vs how many unique cards were flagged:
+```bash
+docker exec postgres_db psql -U postgres -d fraud_detection -c "SELECT 'Total Cards Processed' AS Metric, COUNT(DISTINCT f2_pan) AS Unique_Cards FROM authorizationtransactions UNION ALL SELECT 'Compromised Cards (Fraud)', COUNT(DISTINCT f2_pan) FROM fraudalerts;"
+```
+
+### 4. Resetting the Database for Re-Testing
+If you want to clear out the database and start a fresh test run, you can drop the entire schema using this Docker command:
+```bash
+docker exec postgres_db psql -U postgres -d fraud_detection -c "DROP TABLE IF EXISTS fraudalerts, authorizationtransactions;"
+```
+Once dropped, just repeat **Step A** and **Step B** to generate a brand new set of randomized fraud data!
+
+---
+
+### Running Unit Tests
+To run the automated unit tests:
 ```bash
 dotnet test
 ```

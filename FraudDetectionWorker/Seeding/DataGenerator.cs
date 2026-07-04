@@ -170,7 +170,7 @@ public class DataGenerator
         while (i < count)
         {
             string pan = _cardPool[_rand.Next(_cardPool.Count)];
-            DateTime txnDateTime = baseDate.AddSeconds(_rand.Next(0, 86400 * 90));
+            DateTime txnDateTime = baseDate.AddSeconds(_rand.Next(0, 86400)); // Spread across 24 hours
 
             bool generateFraudPattern = (generatedFraud < fraudCountTarget) && (_rand.NextDouble() < 0.1);
 
