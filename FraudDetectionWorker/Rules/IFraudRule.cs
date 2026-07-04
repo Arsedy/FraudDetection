@@ -19,14 +19,14 @@ public interface IFraudRule
 // return type class 
 public class RuleResult
 {
-    public string _ruleName { get; set;} 
-    public string _description { get; set;} 
+    public string RuleName { get; set;} 
+    public string Description { get; set;} 
     public Guid? TransactionId { get; set; } // The ID of the transaction flagged as fraud
-    public bool IsSatisfied => string.IsNullOrEmpty(_ruleName); //if the rule is satisfied, it will return true, otherwise it will return false
+    public bool IsSatisfied => string.IsNullOrEmpty(RuleName); //if the rule is satisfied, it will return true, otherwise it will return false
     public RuleResult(string ruleName, string description , Guid? transactionId) //consturctor to initialize the properties
     {
-        _ruleName = ruleName;
-        _description = description;
+        RuleName = ruleName;
+        Description = description;
         TransactionId = transactionId;
     }
 }

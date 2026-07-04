@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Tests;
 
-public class UnitTest1
+public class FraudRuleTests
 {
     [Fact]
     public async Task TestVelocityRule_ShouldTrigger_WhenTransactionCountExceedsThreshold()
@@ -21,7 +21,7 @@ public class UnitTest1
 
         // Assert
         //Should return a RuleResult with the rule name and description, indicating that the rule is not satisfied
-        Assert.False(result._ruleName == string.Empty);
+        Assert.False(result.IsSatisfied);
     }
     [Fact]
     public async Task TestVelocityRule_ShouldNotTrigger_WhenTransactionCountIsBelowThreshold()
@@ -34,7 +34,7 @@ public class UnitTest1
         var result = await rule.IsRuleSatisfiedAsync(transactions, CancellationToken.None);
 
         // Assert
-        Assert.True(result._ruleName == string.Empty);
+        Assert.True(result.IsSatisfied);
     }
 
 
@@ -51,7 +51,7 @@ public class UnitTest1
         var result = await rule.IsRuleSatisfiedAsync(transactions, CancellationToken.None);
 
         // Assert
-        Assert.False(result._ruleName == string.Empty);
+        Assert.False(result.IsSatisfied);
     }
     [Fact]
     public async Task TestTravelRule_ShouldNotTrigger_WhenTransactionLocationsAreSame()
@@ -64,7 +64,7 @@ public class UnitTest1
         var result = await rule.IsRuleSatisfiedAsync(transactions, CancellationToken.None);
 
         // Assert
-        Assert.True(result._ruleName == string.Empty);
+        Assert.True(result.IsSatisfied);
     }
 
 
@@ -82,7 +82,7 @@ public class UnitTest1
         var result = await rule.IsRuleSatisfiedAsync(transactions, CancellationToken.None);
 
         // Assert
-        Assert.False(result._ruleName == string.Empty);
+        Assert.False(result.IsSatisfied);
 
     }
     [Fact]
@@ -96,7 +96,7 @@ public class UnitTest1
         var result = await rule.IsRuleSatisfiedAsync(transactions, CancellationToken.None);
 
         // Assert
-        Assert.True(result._ruleName == string.Empty);
+        Assert.True(result.IsSatisfied);
     }
 
 
@@ -114,7 +114,7 @@ public class UnitTest1
         var result = await rule.IsRuleSatisfiedAsync(transactions, CancellationToken.None);
 
         // Assert
-        Assert.False(result._ruleName == string.Empty);
+        Assert.False(result.IsSatisfied);
     }
 
     [Fact]
@@ -128,7 +128,7 @@ public class UnitTest1
         var result = await rule.IsRuleSatisfiedAsync(transactions, CancellationToken.None);
 
         // Assert
-        Assert.True(result._ruleName == string.Empty);
+        Assert.True(result.IsSatisfied);
     }
 
 }

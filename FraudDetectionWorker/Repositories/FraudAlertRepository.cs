@@ -15,6 +15,10 @@ public class FraudAlertRepository : IFraudAlertRepository
     public async Task AddAlertAsync(FraudAlert alert, CancellationToken cancellationToken)
     {
         await _dbContext.FraudAlerts.AddAsync(alert, cancellationToken);
+    }
+
+    public async Task SaveChangesAsync(CancellationToken cancellationToken)
+    {
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 }

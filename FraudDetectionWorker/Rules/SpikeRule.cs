@@ -7,8 +7,8 @@ using FraudDetectionWorker.Rules;
 namespace FraudDetectionWorker.Rules;
 public class SpikeRule : IFraudRule
 {
-    public string Name => "Card Testing Rule";
-    public string Description => "This rule checks for patterns indicative of card testing, such as multiple small transactions in a short period.";
+    public string Name => "Spike Rule";
+    public string Description => "This rule checks for patterns indicative of spike transactions, such as a sudden increase in transaction amount.";
 
     public async Task<RuleResult> IsRuleSatisfiedAsync(List<AuthorizationTransaction> transactions, CancellationToken cancellationToken)
     {
