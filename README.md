@@ -30,8 +30,7 @@ FraudDetection/ (Solution Root)
 │   │   └── SchemaBuilder.cs   # Automatic database & schema creation helper
 │   ├── Models/
 │   │   ├── AuthorizationTransaction.cs # EF model for ISO 8583 transactions
-│   │   ├── FraudAlert.cs      # EF model for flagged suspicious transactions
-│   │   └── LastFraudCheckTime.cs # Tracks last timestamp processed
+│   │   └── FraudAlert.cs      # EF model for flagged suspicious transactions
 │   ├── Repositories/          # Repository pattern implementation
 │   │   ├── IFraudAlertRepository.cs
 │   │   ├── FraudAlertRepository.cs
@@ -68,6 +67,20 @@ FraudDetection/ (Solution Root)
 * **Robust State Tracking**: Designed to run via a **Timestamp Sliding Window** or **Status Flagging**, preventing repetitive scans of older transactions and saving memory.
 
 ---
+
+## 🛡️ Fraud Rules
+
+Each rule receives a card's full transaction history (grouped by `F2_PAN`) and returns the `TransactionId` of the offending transaction if fraud is detected.
+
+| Rule | Detection Logic | Key Thresholds |
+|------|----------------|----------------|
+| **Velocity Rule** | Sliding time window over chronologically sorted transactions. Counts how many transactions fall within a rolling 10-minute window using a Queue. | > 5 transactions in 10 minutes |
+| **Travel Rule** | Sorts transactions by time, then checks consecutive pairs for a country change. If two consecutive transactions are from different countries within a physically impossible travel time, it flags the second one. | Different country within < 1 hour |
+| **Card Testing Rule** | Counts declined transactions (response code ≠ "00"). If there are 3+ declines, it looks for the first approved transaction after the last decline whose amount exceeds 5× the average decline amount. | ≥ 3 declines + approved amount > 5× avg decline |
+| **Spike Rule** | Calculates the median transaction amount for a card's history, then checks if the latest transaction exceeds 5× the median. | Latest amount > 5× median |
+
+> **Note:** The mock data seeder assigns each card a consistent "home country" so that normal transactions never cross borders. Only the deliberately injected `ImpossibleTravelPattern` creates cross-country activity within a short time window.
+
 
 ## 🔄 Architecture & Workflow
 

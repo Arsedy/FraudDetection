@@ -10,6 +10,7 @@ public class DataGenerator
     private readonly Random _rand = new(42); // Seeded for reproducibility
     private readonly List<string> _cardPool = [];
     private readonly List<MerchantTemplate> _merchantPool = [];
+    private readonly Dictionary<string, string> _panCountryMap = new(); // Tracks each card's home country
     
     // ISO 3166 numeric country codes
     private static readonly string[] Countries = ["840", "792", "826", "250", "276", "380", "392", "036"]; // USA, Turkey, UK, France, Germany, Italy, Japan, Australia
@@ -200,7 +201,17 @@ public class DataGenerator
 
     private void GenerateNormalTransaction(DataTable auths, string pan, DateTime txnTime, ref long stan, ref long rrn)
     {
-        var merchant = _merchantPool[_rand.Next(_merchantPool.Count)];
+        // Keep each card in a consistent "home" country so normal data doesn't trigger TravelRule
+        if (!_panCountryMap.TryGetValue(pan, out var homeCountry))
+        {
+            homeCountry = Countries[_rand.Next(Countries.Length)];
+            _panCountryMap[pan] = homeCountry;
+        }
+
+        var localMerchants = _merchantPool.FindAll(m => m.Country == homeCountry);
+        var merchant = localMerchants.Count > 0 
+            ? localMerchants[_rand.Next(localMerchants.Count)] 
+            : _merchantPool[_rand.Next(_merchantPool.Count)];
         
         decimal amount = (decimal)(_rand.NextDouble() * 120 + 2.50);
         if (_rand.NextDouble() < 0.05) amount = (decimal)(_rand.NextDouble() * 800 + 100);

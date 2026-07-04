@@ -38,9 +38,10 @@ public class SpikeRule : IFraudRule
         decimal threshold = medianAmount * multiplier;
 
 
-        var latestTransaction = transactions.LastOrDefault(); 
+        // 4. Get the chronologically latest transaction (sort by time, not by amount)
+        var latestTransaction = transactions.OrderByDescending(t => t.F7_TxnDateTime).First();
 
-        if (latestTransaction != null && latestTransaction.F4_AmountTxn > threshold)
+        if (latestTransaction.F4_AmountTxn > threshold)
         {
             return new RuleResult(Name, Description , latestTransaction.TransactionId);
         }

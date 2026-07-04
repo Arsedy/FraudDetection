@@ -2,51 +2,47 @@ using System;
 using System.Threading.Tasks;
 using System.Threading;
 using FraudDetectionWorker.Models;
-using FraudDetectionWorker.Rules;
 
 namespace FraudDetectionWorker.Rules;
 public class CardTestingRule : IFraudRule
 {
     public string Name => "Card Testing Rule";
-    public string Description => "This rule checks for patterns indicative of card testing, such as multiple small transactions in a short period.";
+    public string Description => "This rule checks for patterns indicative of card testing, such as multiple small declines followed by a large approved purchase.";
 
     public async Task<RuleResult> IsRuleSatisfiedAsync(List<AuthorizationTransaction> transactions, CancellationToken cancellationToken)
     {
-        await Task.Yield(); // Simulate asynchronous operation
-
-        // Check if the cancellation has been requested
+        await Task.Yield();
         cancellationToken.ThrowIfCancellationRequested();
-        
-        var decline = 0.0m;
-        var accepted = 0.0m;
 
-        var decline_count = 0;
-        var accepted_count = 0;
+        // 1. Sort chronologically
+        var sortedTxns = transactions.OrderBy(t => t.F7_TxnDateTime).ToList();
 
-        foreach (var transaction in transactions)
+        // 2. Separate declines and approvals
+        var declines = sortedTxns.Where(t => t.F39_ResponseCode != "00").ToList();
+
+        // Need at least 3 declines to consider it card testing
+        if (declines.Count < 3)
         {
-            // Placeholder logic: Check if the transaction amount is below a certain threshold
-            if(transaction.F39_ResponseCode == "05") // "05" indicates a declined transaction "Do Not Honor"
-            {
-                decline += transaction.F4_AmountTxn;
-                decline_count++;
-            }
-            else
-            {
-                accepted += transaction.F4_AmountTxn;
-                accepted_count++;
-            }
-        }
-        var decline_avg = decline_count > 0 ? decline / decline_count : 0;
-        var accepted_avg = accepted_count > 0 ? accepted / accepted_count : 0;
-        if (accepted_avg > decline_avg * 5m && decline_count> accepted_count) // if the average accepted transaction amount is more than 5 times the average declined transaction amount, we consider it a card testing pattern
-        {
-            return new RuleResult(Name, Description , transactions[decline_count].TransactionId); // Return the transaction ID of the first accepted transaction after the declines.
+            return new RuleResult(string.Empty, string.Empty, null);
         }
 
-        return new RuleResult(string.Empty, string.Empty , null); // Return an empty RuleResult if the rule is satisfied
+        // 3. Calculate the average declined amount
+        var declineAvg = declines.Average(t => t.F4_AmountTxn);
 
+        // 4. Find the first approved transaction AFTER the last decline 
+        //    whose amount is suspiciously larger (5x the average decline amount)
+        var lastDeclineTime = declines.Last().F7_TxnDateTime;
+        var suspiciousApproval = sortedTxns
+            .Where(t => t.F39_ResponseCode == "00" 
+                     && t.F7_TxnDateTime >= lastDeclineTime 
+                     && t.F4_AmountTxn > declineAvg * 5m)
+            .FirstOrDefault();
+
+        if (suspiciousApproval != null)
+        {
+            return new RuleResult(Name, Description, suspiciousApproval.TransactionId);
+        }
+
+        return new RuleResult(string.Empty, string.Empty, null);
     }
-    
 }
-     

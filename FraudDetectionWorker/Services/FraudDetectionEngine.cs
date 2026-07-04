@@ -56,7 +56,6 @@ public class FraudDetectionEngine : IFraudDetectionEngine
                     };
                     await _fraud_alert_repository.AddAlertAsync(alert, cancellationToken);
                     totalalerts++;
-                    break; // Exit the loop after the first rule is not satisfied for this group of transactions
                 }
             }
         }
