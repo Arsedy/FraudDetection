@@ -12,7 +12,7 @@ public class FraudAlert
     public Guid AlertId { get; set; } = Guid.NewGuid();
 
     [Column("transactionid")]
-    public Guid TransactionId { get; set; }
+    public Guid? TransactionId { get; set; }
 
     [Column("f2_pan")]
     [MaxLength(19)]

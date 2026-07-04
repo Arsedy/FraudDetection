@@ -159,7 +159,7 @@ public class DataGenerator
         return auths;
     }
 
-    public DataTable GenerateBatch(int count, ref long currentStan, ref long currentRrn, DateTime baseDate, double fraudRate = 0.015)
+    public DataTable GenerateBatch(int count, ref long currentStan, ref long currentRrn, DateTime baseDate, double fraudRate = 0.10)
     {
         var auths = CreateDataTable();
 
@@ -182,7 +182,7 @@ public class DataGenerator
                     1 => GenerateCNPVelocityPattern(auths, pan, txnDateTime, ref currentStan, ref currentRrn),
                     2 => GenerateImpossibleTravelPattern(auths, pan, txnDateTime, ref currentStan, ref currentRrn),
                     3 => GenerateCardTestingPattern(auths, pan, txnDateTime, ref currentStan, ref currentRrn),
-                    _ => GenerateHighRiskOffHoursPattern(auths, pan, txnDateTime, ref currentStan, ref currentRrn)
+                    _ => GenerateSpikePattern(auths, pan, txnDateTime, ref currentStan, ref currentRrn)
                 };
 
                 generatedFraud += injectedCount;
@@ -395,37 +395,68 @@ public class DataGenerator
         return declineCount + 1;
     }
 
-    private int GenerateHighRiskOffHoursPattern(DataTable auths, string pan, DateTime baseTime, ref long stan, ref long rrn)
+    private int GenerateSpikePattern(DataTable auths, string pan, DateTime baseTime, ref long stan, ref long rrn)
     {
-        DateTime local3Am = new(baseTime.Year, baseTime.Month, baseTime.Day, 3, _rand.Next(0, 60), _rand.Next(0, 60));
-        var highRiskMerch = _merchantPool.Find(m => m.MCC == "7995" || m.MCC == "5944") ?? _merchantPool[0];
+        for (int step = 0; step < 3; step++)
+        {
+            // 3 normal transactions
+            DateTime txnTime = baseTime.AddHours(step);
+            decimal amount = (decimal)(_rand.NextDouble() * 50 + 10); // Normal amount between $10 and $60
+            var merchant = _merchantPool[_rand.Next(_merchantPool.Count)];
+            
+            string rrnStr = GetNextRrn(ref rrn);
+            string stanStr = GetNextStan(ref stan);
 
-        decimal amount = (decimal)(_rand.NextDouble() * 1500 + 800);
+            AddAuthRow(auths,
+                transactionId: Guid.NewGuid(),
+                mti: "0100",
+                pan: pan,
+                procCode: "000000",
+                amount: amount,
+                txnTime: txnTime,
+                stan: stanStr,
+                rrn: rrnStr,
+                authCode: _rand.Next(100000, 999999).ToString(),
+                respCode: "00",
+                mcc: merchant.MCC,
+                country: merchant.Country,
+                entryMode: "051",
+                tid: merchant.TID,
+                mid: merchant.MID,
+                location: merchant.NameAndLocation,
+                currency: "840"
+            );
+        }
 
-        string rrnStr = GetNextRrn(ref rrn);
-        string stanStr = GetNextStan(ref stan);
+        // 1 spike transaction
+        DateTime spikeTime = baseTime.AddHours(3);
+        decimal spikeAmount = (decimal)(_rand.NextDouble() * 2000 + 1000); // Massive spike $1000 to $3000
+        var spikeMerchant = _merchantPool.Find(m => m.MCC == "5732") ?? _merchantPool[0]; // Electronics Store
+
+        string spikeRrnStr = GetNextRrn(ref rrn);
+        string spikeStanStr = GetNextStan(ref stan);
 
         AddAuthRow(auths,
             transactionId: Guid.NewGuid(),
             mti: "0100",
             pan: pan,
             procCode: "000000",
-            amount: amount,
-            txnTime: local3Am,
-            stan: stanStr,
-            rrn: rrnStr,
+            amount: spikeAmount,
+            txnTime: spikeTime,
+            stan: spikeStanStr,
+            rrn: spikeRrnStr,
             authCode: _rand.Next(100000, 999999).ToString(),
             respCode: "00",
-            mcc: highRiskMerch.MCC,
-            country: highRiskMerch.Country,
+            mcc: spikeMerchant.MCC,
+            country: spikeMerchant.Country,
             entryMode: "012",
-            tid: highRiskMerch.TID,
-            mid: highRiskMerch.MID,
-            location: highRiskMerch.NameAndLocation,
+            tid: spikeMerchant.TID,
+            mid: spikeMerchant.MID,
+            location: spikeMerchant.NameAndLocation,
             currency: "840"
         );
 
-        return 1;
+        return 4;
     }
 
     private static void AddAuthRow(DataTable table, Guid transactionId, string mti, string pan, string procCode, 

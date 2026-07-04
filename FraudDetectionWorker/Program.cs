@@ -1,6 +1,9 @@
 using FraudDetectionWorker;
 using FraudDetectionWorker.Database;
 using FraudDetectionWorker.Seeding;
+using FraudDetectionWorker.Repositories;
+using FraudDetectionWorker.Services;
+using FraudDetectionWorker.Rules;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -17,6 +20,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddTransient<SchemaBuilder>();
 builder.Services.AddTransient<DataSeeder>();
+
+builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
+builder.Services.AddScoped<IFraudDetectionEngine, FraudDetectionEngine>();
+builder.Services.AddScoped<IFraudAlertRepository, FraudAlertRepository>();
+builder.Services.AddTransient<IFraudRule, CardTestingRule>();
+builder.Services.AddTransient<IFraudRule, VelocityRule>();
+builder.Services.AddTransient<IFraudRule, SpikeRule>();
+builder.Services.AddTransient<IFraudRule, TravelRule>();
 
 // Worker registration
 builder.Services.AddHostedService<FraudWorker>();
