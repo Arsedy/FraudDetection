@@ -98,20 +98,75 @@ public class SchemaBuilder
 
 
 
-        // 2b. Create FraudAlerts Table
-        string createFraudAlertsTableSql = @"
+        // 2a. Create Rules Table
+        string createRulesTableSql = @"
+        CREATE TABLE IF NOT EXISTS rules (
+            ruleid VARCHAR(50) PRIMARY KEY,
+            rulename VARCHAR(100) NOT NULL,
+            ruledescription VARCHAR(500) NOT NULL
+        );";
+
+        using (var cmd = new NpgsqlCommand(createRulesTableSql, connection))
+        {
+            cmd.ExecuteNonQuery();
+        }
+
+        // 2b. Create FraudAlerts Table & Perform incremental migration if needed
+        string migrateAndCreateAlertsSql = @"
+        -- Create table if not exists first
         CREATE TABLE IF NOT EXISTS fraudalerts (
             alertid UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             transactionid UUID NOT NULL,
             f2_pan VARCHAR(19) NOT NULL,
-            rulename VARCHAR(50) NOT NULL,
-            description VARCHAR(250) NOT NULL,
+            ruleid VARCHAR(50) NOT NULL,
             isreviewed BOOLEAN NOT NULL DEFAULT FALSE,
             flaggedat TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            CONSTRAINT FK_FraudAlert_Transaction FOREIGN KEY (transactionid) REFERENCES AuthorizationTransactions(TransactionId)
-        );";
+            CONSTRAINT FK_FraudAlert_Transaction FOREIGN KEY (transactionid) REFERENCES AuthorizationTransactions(TransactionId),
+            CONSTRAINT FK_FraudAlert_Rule FOREIGN KEY (ruleid) REFERENCES rules(ruleid)
+        );
 
-        using (var cmd = new NpgsqlCommand(createFraudAlertsTableSql, connection))
+        -- Check if columns/constraints need to be migrated if the table already existed with old schema
+        DO $$
+        BEGIN
+            -- 1. Check if we need to add ruleid column
+            IF NOT EXISTS (
+                SELECT 1 
+                FROM information_schema.columns 
+                WHERE table_name='fraudalerts' AND column_name='ruleid'
+            ) THEN
+                -- Drop old data to avoid FK/NOT NULL conflicts since ruleid is mandatory now
+                TRUNCATE TABLE fraudalerts CASCADE;
+                
+                ALTER TABLE fraudalerts ADD COLUMN ruleid VARCHAR(50) NOT NULL;
+                
+                IF NOT EXISTS (
+                    SELECT 1 
+                    FROM information_schema.table_constraints 
+                    WHERE constraint_name='fk_fraudalert_rule' AND table_name='fraudalerts'
+                ) THEN
+                    ALTER TABLE fraudalerts ADD CONSTRAINT FK_FraudAlert_Rule FOREIGN KEY (ruleid) REFERENCES rules(ruleid);
+                END IF;
+            END IF;
+
+            -- 2. Drop old columns if they exist
+            IF EXISTS (
+                SELECT 1 
+                FROM information_schema.columns 
+                WHERE table_name='fraudalerts' AND column_name='rulename'
+            ) THEN
+                ALTER TABLE fraudalerts DROP COLUMN rulename;
+            END IF;
+
+            IF EXISTS (
+                SELECT 1 
+                FROM information_schema.columns 
+                WHERE table_name='fraudalerts' AND column_name='description'
+            ) THEN
+                ALTER TABLE fraudalerts DROP COLUMN description;
+            END IF;
+        END $$;";
+
+        using (var cmd = new NpgsqlCommand(migrateAndCreateAlertsSql, connection))
         {
             cmd.ExecuteNonQuery();
         }

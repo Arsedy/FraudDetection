@@ -32,10 +32,6 @@ public class SeedRunner
 
         try
         {
-            // 1. Build database/tables/indexes
-            var schemaBuilder = host.Services.GetRequiredService<SchemaBuilder>();
-            schemaBuilder.EnsureDatabaseAndSchemaCreated();
-
             // 2. Run Seeder
             var seeder = host.Services.GetRequiredService<DataSeeder>();
             seeder.SeedData(seedCount);

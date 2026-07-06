@@ -11,6 +11,7 @@ public class AppDbContext : DbContext
 
     public DbSet<AuthorizationTransaction> AuthorizationTransactions { get; set; } = null!;
     public DbSet<FraudAlert> FraudAlerts { get; set; } = null!;
+    public DbSet<Rule> Rules { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -21,6 +22,13 @@ public class AppDbContext : DbContext
             .HasOne(f => f.Transaction)
             .WithMany()
             .HasForeignKey(f => f.TransactionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Define relationship between FraudAlert and Rule
+        modelBuilder.Entity<FraudAlert>()
+            .HasOne(f => f.Rule)
+            .WithMany()
+            .HasForeignKey(f => f.RuleId)
             .OnDelete(DeleteBehavior.Restrict);
 
         // Mark F37_RRN as unique index in AuthorizationTransactions

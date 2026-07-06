@@ -6,6 +6,7 @@ namespace FraudDetectionWorker.Rules;
 
 public interface IFraudRule
 {
+    string Id => GetType().Name;
     String Name { get; } // each rule will have a unique name to identify it in the system
     String Description { get; } // each rule will have a description to explain what it does and how it works
 

@@ -18,13 +18,9 @@ public class FraudAlert
     [MaxLength(19)]
     public string F2_PAN { get; set; } = null!;
 
-    [Column("rulename")]
+    [Column("ruleid")]
     [MaxLength(50)]
-    public string RuleName { get; set; } = null!;
-
-    [Column("description")]
-    [MaxLength(250)]
-    public string Description { get; set; } = null!;
+    public string RuleId { get; set; } = null!;
 
     [Column("isreviewed")]
     public bool IsReviewed { get; set; } = false;
@@ -34,4 +30,7 @@ public class FraudAlert
 
     [ForeignKey(nameof(TransactionId))]
     public AuthorizationTransaction? Transaction { get; set; }
+
+    [ForeignKey(nameof(RuleId))]
+    public Rule? Rule { get; set; }
 }

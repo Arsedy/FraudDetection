@@ -51,8 +51,7 @@ public class FraudDetectionEngine : IFraudDetectionEngine
                     {
                         TransactionId = result.TransactionId,
                         F2_PAN = group.Key,
-                        RuleName = result.RuleName,
-                        Description = result.Description
+                        RuleId = rule.Id
                     };
                     await _fraud_alert_repository.AddAlertAsync(alert, cancellationToken);
                     totalalerts++;
