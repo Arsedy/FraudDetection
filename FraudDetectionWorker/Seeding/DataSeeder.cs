@@ -33,7 +33,9 @@ public class DataSeeder
         GetLastSequences(ref startStan, ref startRrn);
         _logger.LogInformation("Resuming/starting with STAN: {Stan}, RRN: {Rrn}", startStan, startRrn);
 
-        var generator = new DataGenerator();
+        // Scale card pool to daily count so fraud patterns don't pile up on the same PANs across 30 days
+        int cardPoolSize = Math.Max(50000, dailyCount);
+        var generator = new DataGenerator(cardPoolSize);
         var totalStopwatch = Stopwatch.StartNew();
 
         int totalSeededCount = 0;
