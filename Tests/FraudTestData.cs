@@ -334,4 +334,42 @@ public static class FraudTestData
             }
         };
     }
+
+    public static List<AuthorizationTransaction> GetExpiryDateBruteForcePattern(string pan = "4111222233339999")
+    {
+        var list = new List<AuthorizationTransaction>();
+        var baseTime = BaseTime;
+        
+        // 4 transactions in 2 minutes, with different expiration dates
+        for (int i = 0; i < 4; i++)
+        {
+            var time = baseTime.AddSeconds(i * 30);
+            var expMonth = (i + 1).ToString("D2"); // "01", "02", "03", "04"
+            
+            list.Add(new AuthorizationTransaction
+            {
+                TransactionId = Guid.NewGuid(),
+                Mti = "0100",
+                F2_PAN = pan,
+                F3_ProcCode = "000000",
+                F4_AmountTxn = 1.05m, // Micro-transaction typical for card testing
+                F7_TxnDateTime = time,
+                F11_STAN = $"00020{i}",
+                F12_LocalTime = TimeOnly.FromDateTime(time),
+                F13_LocalDate = DateOnly.FromDateTime(time),
+                F14_ExpDate = $"{expMonth}28", // Changing expiration dates
+                F18_MCC = "5816",
+                F19_AcqCountry = "840",
+                F22_POSEntryMode = "012",
+                F37_RRN = $"20000000003{i}",
+                F38_AuthCode = "",
+                F39_ResponseCode = i == 3 ? "00" : "54", // 54 = Expired Card, 00 = Success on last try
+                F41_TID = "TID00005",
+                F42_MID = "MID0000005",
+                F43_MerchantLoc = "ONLINE STORE          SEATTLE      WA",
+                F49_CurrencyCode = "840"
+            });
+        }
+        return list;
+    }
 }

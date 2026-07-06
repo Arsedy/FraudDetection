@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using System.Threading;
 using FraudDetectionWorker.Models;
@@ -131,4 +131,31 @@ public class FraudRuleTests
         Assert.True(result.IsSatisfied);
     }
 
+    [Fact]
+    public async Task ExpiryDateRule_ShouldTrigger_WhenMultipleDistinctExpiryDatesAreUsed()
+    {
+        // Arrange
+        var rule = new ExpiryDateRule();
+        var transactions = FraudTestData.GetExpiryDateBruteForcePattern();
+
+        // Act
+        var result = await rule.IsRuleSatisfiedAsync(transactions, CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSatisfied);
+    }
+
+    [Fact]
+    public async Task ExpiryDateRule_ShouldNotTrigger_WhenNormalTransactionsAreProcessed()
+    {
+        // Arrange
+        var rule = new ExpiryDateRule();
+        var transactions = FraudTestData.GetNormalTransactions();
+
+        // Act
+        var result = await rule.IsRuleSatisfiedAsync(transactions, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSatisfied);
+    }
 }
