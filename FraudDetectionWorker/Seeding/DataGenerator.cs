@@ -177,13 +177,14 @@ public class DataGenerator
 
             if (generateFraudPattern)
             {
-                int pattern = _rand.Next(1, 5);
+                int pattern = _rand.Next(1, 6);
                 int injectedCount = pattern switch
                 {
                     1 => GenerateCNPVelocityPattern(auths, pan, txnDateTime, ref currentStan, ref currentRrn),
                     2 => GenerateImpossibleTravelPattern(auths, pan, txnDateTime, ref currentStan, ref currentRrn),
                     3 => GenerateCardTestingPattern(auths, pan, txnDateTime, ref currentStan, ref currentRrn),
-                    _ => GenerateSpikePattern(auths, pan, txnDateTime, ref currentStan, ref currentRrn)
+                    4 => GenerateSpikePattern(auths, pan, txnDateTime, ref currentStan, ref currentRrn),
+                    _ => GenerateExpiryDateBruteForcePattern(auths, pan, txnDateTime, ref currentStan, ref currentRrn)
                 };
 
                 generatedFraud += injectedCount;
@@ -466,6 +467,49 @@ public class DataGenerator
             location: spikeMerchant.NameAndLocation,
             currency: "840"
         );
+
+        return 4;
+    }
+
+    private int GenerateExpiryDateBruteForcePattern(DataTable auths, string pan, DateTime baseTime, ref long stan, ref long rrn)
+    {
+        var onlineMerchant = _merchantPool.Find(m => m.MCC == "5816" || m.MCC == "5942") ?? _merchantPool[0];
+
+        // 4 transactions in 2 minutes, with different expiration dates
+        for (int i = 0; i < 4; i++)
+        {
+            DateTime txnTime = baseTime.AddSeconds(i * 30);
+            decimal amount = 1.05m; 
+            string expMonth = (i + 1).ToString("D2"); // "01", "02", "03", "04"
+            string expDate = $"{expMonth}28"; // Changing expiration dates
+
+            string rrnStr = GetNextRrn(ref rrn);
+            string stanStr = GetNextStan(ref stan);
+
+            AddAuthRow(auths,
+                transactionId: Guid.NewGuid(),
+                mti: "0100",
+                pan: pan,
+                procCode: "000000",
+                amount: amount,
+                txnTime: txnTime,
+                stan: stanStr,
+                rrn: rrnStr,
+                authCode: "",
+                respCode: i == 3 ? "00" : "54", // 54 = Expired Card, 00 = Success on last try
+                mcc: onlineMerchant.MCC,
+                country: onlineMerchant.Country,
+                entryMode: "012", // CNP
+                tid: onlineMerchant.TID,
+                mid: onlineMerchant.MID,
+                location: onlineMerchant.NameAndLocation,
+                currency: "840"
+            );
+            
+            // Adjust the added row's Expiry Date to match our generated expDate
+            // Since AddAuthRow defaults to "2912", we need to override it
+            auths.Rows[^1]["F14_ExpDate"] = expDate;
+        }
 
         return 4;
     }

@@ -20,49 +20,57 @@ public class DataSeeder
         _logger = logger;
     }
 
-    public void SeedData(int totalCount = 1000000, int batchSize = 100000)
+    public void SeedData(int dailyCount = 1000000, int batchSize = 100000)
     {
-        _logger.LogInformation("Starting seeding process for {TotalCount} transactions into PostgreSQL...", totalCount);
+        int totalDays = 30;
+        int totalCount = dailyCount * totalDays;
+
+        _logger.LogInformation("Starting 30-day seeding process. Daily Count: {DailyCount}, Total Expected: {TotalCount} transactions.", dailyCount, totalCount);
         
         long startStan = 0;
-        long startRrn = 100000000000; // 12 digits minimum starting point
+        long startRrn = 100000000000; 
 
-        // Get last sequence numbers from DB to support appending later
         GetLastSequences(ref startStan, ref startRrn);
         _logger.LogInformation("Resuming/starting with STAN: {Stan}, RRN: {Rrn}", startStan, startRrn);
 
         var generator = new DataGenerator();
         var totalStopwatch = Stopwatch.StartNew();
 
-        int seededCount = 0;
+        int totalSeededCount = 0;
         int batchIndex = 1;
-        DateTime baseDate = DateTime.UtcNow.Date.AddDays(-1); // Start at yesterday midnight
 
-        while (seededCount < totalCount)
+        // Loop from 30 days ago to yesterday
+        for (int dayOffset = -totalDays; dayOffset <= -1; dayOffset++)
         {
-            int currentBatchSize = Math.Min(batchSize, totalCount - seededCount);
-            _logger.LogInformation("Generating batch {BatchIndex} of size {Size}...", batchIndex, currentBatchSize);
+            DateTime baseDate = DateTime.UtcNow.Date.AddDays(dayOffset);
+            _logger.LogInformation("Seeding Day {DayOffset} (Date: {BaseDate:yyyy-MM-dd})...", dayOffset, baseDate);
 
-            var batchStopwatch = Stopwatch.StartNew();
-            var auths = generator.GenerateBatch(currentBatchSize, ref startStan, ref startRrn, baseDate);
-            batchStopwatch.Stop();
+            int seededForDay = 0;
+            while (seededForDay < dailyCount)
+            {
+                int currentBatchSize = Math.Min(batchSize, dailyCount - seededForDay);
+                
+                var batchStopwatch = Stopwatch.StartNew();
+                var auths = generator.GenerateBatch(currentBatchSize, ref startStan, ref startRrn, baseDate);
+                batchStopwatch.Stop();
 
-            _logger.LogInformation("Generated batch in {ElapsedMs} ms. Bulk importing to PostgreSQL...", batchStopwatch.ElapsedMilliseconds);
+                batchStopwatch.Restart();
+                BulkInsert(auths, "authorizationtransactions");
+                batchStopwatch.Stop();
 
-            batchStopwatch.Restart();
-            BulkInsert(auths, "authorizationtransactions");
-            batchStopwatch.Stop();
+                seededForDay += currentBatchSize;
+                totalSeededCount += currentBatchSize;
+                
+                _logger.LogInformation("  [Day {DayOffset} | Batch {BatchIndex}] Inserted {BatchSize} rows. Day progress: {DayCount}/{DailyCount} (Total: {TotalCount}/{ExpectedTotal})", 
+                    dayOffset, batchIndex, currentBatchSize, seededForDay, dailyCount, totalSeededCount, totalCount);
 
-            seededCount += currentBatchSize;
-            _logger.LogInformation("Inserted batch in {ElapsedMs} ms. Total seeded so far: {Count}/{Total}", 
-                batchStopwatch.ElapsedMilliseconds, seededCount, totalCount);
-
-            batchIndex++;
+                batchIndex++;
+            }
         }
 
         totalStopwatch.Stop();
-        _logger.LogInformation("Successfully completed seeding of {TotalCount} rows in {ElapsedSeconds} seconds.", 
-            totalCount, totalStopwatch.Elapsed.TotalSeconds);
+        _logger.LogInformation("Successfully completed seeding of {TotalCount} rows across {TotalDays} days in {ElapsedSeconds} seconds.", 
+            totalSeededCount, totalDays, totalStopwatch.Elapsed.TotalSeconds);
     }
 
     private void GetLastSequences(ref long maxStan, ref long maxRrn)

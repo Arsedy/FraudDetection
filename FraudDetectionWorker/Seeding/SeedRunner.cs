@@ -28,7 +28,7 @@ public class SeedRunner
     public static void Run(IHost host, int seedCount)
     {
         var logger = host.Services.GetRequiredService<ILogger<SeedRunner>>();
-        logger.LogInformation("Application running in SEED MODE. Target count: {Count}", seedCount);
+        logger.LogInformation("Application running in SEED MODE. Daily count: {Count} (Will generate 30 days of historical data)", seedCount);
 
         try
         {

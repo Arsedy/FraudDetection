@@ -21,20 +21,32 @@ public class FraudWorker : BackgroundService
     {
         _logger.LogInformation("FraudWorker background service is starting.");
 
+        int currentDayOffset = -30;
+
         while (!stoppingToken.IsCancellationRequested)
         {
-            _logger.LogInformation("Running fraud detection rules check...");
+            var targetDate = DateTime.UtcNow.Date.AddDays(currentDayOffset);
+            _logger.LogInformation("Running fraud detection rules check for {TargetDate:yyyy-MM-dd} (Day {Offset})...", targetDate, currentDayOffset);
 
             using (var scope = _serviceScopeFactory.CreateScope())
             {
                 var engine = scope.ServiceProvider.GetRequiredService<IFraudDetectionEngine>();
-                var targetDate = DateTime.UtcNow.Date.AddDays(-1); // Process yesterday's transactions
                 await engine.ProcessTransactionAsync(targetDate, stoppingToken);
             }
 
-            _logger.LogInformation("Fraud detection cycle complete. Sleeping for 24 hours...");
-            // Wait 24 hours between runs as specified
-            await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+            if (currentDayOffset < -1)
+            {
+                _logger.LogInformation("Historical cycle complete for Day {Offset}. Sleeping for 5 seconds...", currentDayOffset);
+                currentDayOffset++;
+                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+            }
+            else
+            {
+                _logger.LogInformation("Caught up to current day (Day -1). Sleeping for 24 hours...");
+                // Keep it at -1 so the next time it wakes up (tomorrow), it processes the new yesterday.
+                currentDayOffset = -1; 
+                await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+            }
         }
     }
 }

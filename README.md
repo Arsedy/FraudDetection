@@ -27,10 +27,12 @@ FraudDetection/ (Solution Root)
 │   │
 │   ├── Database/
 │   │   ├── AppDbContext.cs    # EF Core DbContext mapping tables & indexes
+│   │   ├── RuleSyncHelper.cs  # Syncs code-defined rules to the database
 │   │   └── SchemaBuilder.cs   # Automatic database & schema creation helper
 │   ├── Models/
 │   │   ├── AuthorizationTransaction.cs # EF model for ISO 8583 transactions
-│   │   └── FraudAlert.cs      # EF model for flagged suspicious transactions
+│   │   ├── FraudAlert.cs      # EF model for flagged suspicious transactions
+│   │   └── Rule.cs            # EF model for fraud rules
 │   ├── Repositories/          # Repository pattern implementation
 │   │   ├── IFraudAlertRepository.cs
 │   │   ├── FraudAlertRepository.cs
@@ -39,6 +41,7 @@ FraudDetection/ (Solution Root)
 │   ├── Rules/
 │   │   ├── IFraudRule.cs      # Interface for all fraud rules
 │   │   ├── CardTestingRule.cs # Rule checking accepted/declined ratio
+│   │   ├── ExpiryDateRule.cs  # Rule checking brute-force expiry date guessing
 │   │   ├── SpikeRule.cs       # Rule checking massive amount spikes
 │   │   ├── TravelRule.cs      # Rule checking geographic impossible travel
 │   │   └── VelocityRule.cs    # Rule checking card velocity limits
@@ -78,6 +81,7 @@ Each rule receives a card's full transaction history (grouped by `F2_PAN`) and r
 | **Travel Rule** | Sorts transactions by time, then checks consecutive pairs for a country change. If two consecutive transactions are from different countries within a physically impossible travel time, it flags the second one. | Different country within < 1 hour |
 | **Card Testing Rule** | Counts declined transactions (response code ≠ "00"). If there are 3+ declines, it looks for the first approved transaction after the last decline whose amount exceeds 5× the average decline amount. | ≥ 3 declines + approved amount > 5× avg decline |
 | **Spike Rule** | Calculates the median transaction amount for a card's history, then checks if the latest transaction exceeds 5× the median. | Latest amount > 5× median |
+| **Expiry Date Rule** | Detects brute-force expiry date guessing by counting distinct expiration dates used for the same card within a short rolling time window. | ≥ 3 distinct dates in 5 minutes |
 
 > **Note:** The mock data seeder assigns each card a consistent "home country" so that normal transactions never cross borders. Only the deliberately injected `ImpossibleTravelPattern` creates cross-country activity within a short time window.
 
@@ -86,7 +90,7 @@ Each rule receives a card's full transaction history (grouped by `F2_PAN`) and r
 
 The application leverages .NET Dependency Injection to cleanly separate concerns across the background service lifecycle:
 
-1. **`Program.cs` (Configuration):** Registers all database contexts (Scoped), Repositories (Scoped), the `FraudDetectionEngine` (Scoped), and dynamically injects multiple `IFraudRule` implementations. It also registers the `FraudWorker` as a Singleton Hosted Service.
+1. **`Program.cs` (Configuration):** Registers all database contexts (Scoped), Repositories (Scoped), the `FraudDetectionEngine` (Scoped), and dynamically injects multiple `IFraudRule` implementations. It also automatically synchronizes the in-code rules to the `rules` database table on startup, and registers the `FraudWorker` as a Singleton Hosted Service.
 2. **`FraudWorker.cs` (Scheduler):** Runs continuously in the background. Because it is a Singleton, it uses `IServiceScopeFactory` to create a fresh Dependency Injection scope for each processing cycle, safely retrieving scoped database services without memory leaks.
 3. **`FraudDetectionEngine.cs` (Orchestrator):** Requests batched transaction data from the `ITransactionRepository`, groups the historical data by card (`F2_PAN`), and dynamically evaluates the history against the injected collection of `IFraudRule` implementations.
 4. **`IFraudRule` (Business Logic):** Pure logic classes (e.g., `VelocityRule`, `TravelRule`, `SpikeRule`, `CardTestingRule`). If a threshold is exceeded, the rule returns a `RuleResult` containing the specific `TransactionId` that caused the breach.
@@ -108,21 +112,22 @@ docker run --name postgres_db -e POSTGRES_PASSWORD=YourSecurePassword123! -p 543
 ```
 
 ### 3. Testing the System (Step-by-Step)
-Because the background worker analyzes "yesterday's" data, the seeder is specifically designed to generate transactions mapping exactly to the last 24 hours. Exactly **10%** of the generated data will be fraudulent, equally distributed across all 4 rules.
+The seeder is designed to generate a full **30 days** of historical transaction data. Exactly **10%** of the generated data will be fraudulent, distributed across all 5 rules. The background worker simulates a fast-forward progression, analyzing each historical day with a 5-second sleep in between, until it reaches the present day.
 
 **Step A: Seed the Database**
-To automatically create the database schemas and seed it with 100,000 mock transactions, run:
+To automatically create the database schemas and seed it with 100,000 mock transactions **per day**, run:
 ```bash
 dotnet run --project FraudDetectionWorker -- --seed --count 100000
 ```
-*(This takes ~3 seconds. It will automatically generate `fraud_detection` DB if it doesn't exist).*
+*(This generates 100,000 transactions per day for 30 days, resulting in 3,000,000 total rows. It automatically generates the `fraud_detection` DB if it doesn't exist).*
 
 **Step B: Run the Background Worker**
 Start the background engine to process the data:
 ```bash
 dotnet run --project FraudDetectionWorker
 ```
-The worker will boot up, analyze the 100,000 transactions, flag the 10,000 fraudulent patterns it detects, insert them into the `fraudalerts` table, and then sleep. You can press `Ctrl+C` to stop it once it says "Sleeping for 24 hours".
+The worker will boot up and start processing data from 30 days ago. It will flag the fraudulent patterns it detects, insert them into the `fraudalerts` table, and sleep for 5 seconds between each historical day. You can press `Ctrl+C` to stop it once it reaches the current day and says "Sleeping for 24 hours".
+
 
 **Step C: View the Results (DBeaver/SQL)**
 You can connect to `localhost:5432` with username `postgres` and password `YourSecurePassword123!` using any SQL client (like DBeaver) to view the `fraudalerts` table.
