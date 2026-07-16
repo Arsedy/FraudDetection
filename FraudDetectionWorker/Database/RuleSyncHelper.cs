@@ -38,6 +38,19 @@ public static class RuleSyncHelper
             }
         }
 
+        // Ensure the ML synthetic rule exists for high-confidence ML fraud alerts
+        const string mlRuleId = "ML_HighConfidenceFraud";
+        if (!dbRulesDict.ContainsKey(mlRuleId))
+        {
+            var mlRule = new Rule
+            {
+                RuleId = mlRuleId,
+                RuleName = "ML High Confidence Fraud",
+                RuleDescription = "Transaction flagged by the ML model with a fraud probability score >= 0.85, bypassing the rules engine."
+            };
+            await dbContext.Rules.AddAsync(mlRule, cancellationToken);
+        }
+
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 }

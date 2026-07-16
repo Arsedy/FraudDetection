@@ -18,7 +18,14 @@
     </PackageReference>
     <PackageReference Include="Npgsql" Version="9.0.2" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.ML" Version="4.0.2" />
+    <PackageReference Include="Microsoft.ML" Version="4.0.2" />
+    <PackageReference Include="Microsoft.ML.LightGbm" Version="4.0.2" />
 
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FraudDetection.Shared\FraudDetection.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

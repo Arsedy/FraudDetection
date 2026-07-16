@@ -4,13 +4,16 @@ using FraudDetectionWorker.Seeding;
 using FraudDetectionWorker.Repositories;
 using FraudDetectionWorker.Services;
 using FraudDetectionWorker.Rules;
+using FraudDetection.Shared.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.ML;
 
 bool isSeedMode = SeedRunner.IsSeedMode(args);
 int seedCount = SeedRunner.GetSeedCount(args);
+bool noMl = args.Contains("--no-ml");
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -22,7 +25,6 @@ builder.Services.AddTransient<SchemaBuilder>();
 builder.Services.AddTransient<DataSeeder>();
 
 builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
-builder.Services.AddScoped<IFraudDetectionEngine, FraudDetectionEngine>();
 builder.Services.AddScoped<IFraudAlertRepository, FraudAlertRepository>();
 
 // Automatically scan and register all IFraudRule implementations in assembly
@@ -32,6 +34,37 @@ foreach (var ruleType in ruleTypes)
 {
     builder.Services.AddTransient(typeof(IFraudRule), ruleType);
 }
+
+// ────────────────────────────────────────────────────────────────
+// ML.NET PredictionEnginePool registration (hybrid mode)
+// ────────────────────────────────────────────────────────────────
+string modelPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "fraud_model.zip");
+modelPath = Path.GetFullPath(modelPath);
+
+bool mlModelAvailable = !noMl && File.Exists(modelPath);
+
+if (mlModelAvailable)
+{
+    builder.Services.AddPredictionEnginePool<TransactionFeatures, TransactionPrediction>()
+        .FromFile(filePath: modelPath, watchForChanges: true);
+}
+
+// Register FraudDetectionEngine with ML awareness
+builder.Services.AddScoped<IFraudDetectionEngine>(sp =>
+{
+    var logger = sp.GetRequiredService<ILogger<FraudDetectionEngine>>();
+    var rules = sp.GetRequiredService<IEnumerable<IFraudRule>>();
+    var txnRepo = sp.GetRequiredService<ITransactionRepository>();
+    var alertRepo = sp.GetRequiredService<IFraudAlertRepository>();
+
+    PredictionEnginePool<TransactionFeatures, TransactionPrediction>? pool = null;
+    if (mlModelAvailable)
+    {
+        pool = sp.GetService<PredictionEnginePool<TransactionFeatures, TransactionPrediction>>();
+    }
+
+    return new FraudDetectionEngine(logger, rules, txnRepo, alertRepo, pool, mlEnabled: mlModelAvailable);
+});
 
 // Worker registration
 builder.Services.AddHostedService<FraudWorker>();
@@ -55,6 +88,21 @@ using (var scope = host.Services.CreateScope())
         var rules = scope.ServiceProvider.GetServices<IFraudRule>();
         await RuleSyncHelper.SyncRulesAsync(dbContext, rules);
         progLogger.LogInformation("Database initialization and rule synchronization complete.");
+
+        // Log ML model status
+        if (noMl)
+        {
+            progLogger.LogInformation("ML scoring DISABLED (--no-ml flag specified). Running in pure rules-engine mode.");
+        }
+        else if (mlModelAvailable)
+        {
+            progLogger.LogInformation("ML scoring ENABLED. Model loaded from: {ModelPath}", modelPath);
+        }
+        else
+        {
+            progLogger.LogWarning("ML model not found at {ModelPath}. Running in pure rules-engine mode. " +
+                "Train a model first: dotnet run --project FraudDetection.ML.Trainer", modelPath);
+        }
     }
     catch (Exception ex)
     {
@@ -72,4 +120,3 @@ if (isSeedMode)
 var logger = host.Services.GetRequiredService<ILogger<Program>>();
 logger.LogInformation("Starting Fraud Detection Background Service...");
 await host.RunAsync(); // regular worker execution
-
