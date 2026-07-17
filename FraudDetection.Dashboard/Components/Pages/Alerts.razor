@@ -1,0 +1,290 @@
+@page "/alerts"
+@rendermode InteractiveServer
+@inject IHttpClientFactory HttpClientFactory
+
+<div class="page-header animate-in">
+    <h1>Fraud Alerts</h1>
+    <p>Review and manage flagged transactions</p>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar animate-in">
+    <input class="filter-input" type="text" placeholder="Search by PAN (last 4 digits)..."
+           @bind="panFilter" @bind:event="oninput" style="width: 240px;" />
+    <select class="filter-select" @bind="ruleFilter">
+        <option value="">All Rules</option>
+        @foreach (var rule in availableRules)
+        {
+            <option value="@rule.RuleId">@rule.RuleName</option>
+        }
+    </select>
+    <select class="filter-select" @bind="reviewFilter">
+        <option value="">All Status</option>
+        <option value="false">Pending</option>
+        <option value="true">Reviewed</option>
+    </select>
+    <button class="btn btn-primary btn-sm" @onclick="LoadAlerts">
+        🔍 Search
+    </button>
+</div>
+
+@if (loading)
+{
+    <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <span class="loading-text">Loading alerts...</span>
+    </div>
+}
+else if (errorMessage != null)
+{
+    <div class="glass-card" style="border-color: var(--accent-danger); text-align: center; padding: 40px;">
+        <p style="color: var(--accent-danger-light);">⚠️ @errorMessage</p>
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 8px;">Make sure the WebAPI is running on port 5001</p>
+    </div>
+}
+else
+{
+    <div class="glass-card animate-in">
+        <div class="data-table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Flagged At</th>
+                        <th>Card (PAN)</th>
+                        <th>Amount</th>
+                        <th>Rule</th>
+                        <th>Country</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (alerts.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                                No alerts found matching your filters
+                            </td>
+                        </tr>
+                    }
+                    @foreach (var alert in alerts)
+                    {
+                        <tr>
+                            <td>@alert.FlaggedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td><span class="pan-masked">@MaskPan(alert.PAN)</span></td>
+                            <td style="font-weight: 600; color: var(--text-primary);">
+                                @(alert.Amount?.ToString("C2") ?? "—")
+                            </td>
+                            <td>
+                                <span class="badge @GetRuleBadgeClass(alert.RuleId)">@alert.RuleName</span>
+                            </td>
+                            <td>@(alert.Country?.Trim() ?? "—")</td>
+                            <td>
+                                @if (alert.IsReviewed)
+                                {
+                                    <span class="badge badge-success">✓ Reviewed</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-warning">⏳ Pending</span>
+                                }
+                            </td>
+                            <td>
+                                <button class="btn btn-ghost btn-sm"
+                                        @onclick="() => ToggleReview(alert)"
+                                        disabled="@alert.IsToggling">
+                                    @if (alert.IsToggling)
+                                    {
+                                        <span>...</span>
+                                    }
+                                    else
+                                    {
+                                        <span>@(alert.IsReviewed ? "Undo" : "Review")</span>
+                                    }
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        @if (totalPages > 1)
+        {
+            <div class="pagination">
+                <button class="pagination-btn" disabled="@(currentPage <= 1)" @onclick="PrevPage">← Prev</button>
+                <span class="pagination-info">Page @currentPage of @totalPages (@totalCount alerts)</span>
+                <button class="pagination-btn" disabled="@(currentPage >= totalPages)" @onclick="NextPage">Next →</button>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<AlertItem> alerts = new();
+    private List<RuleOption> availableRules = new();
+    private bool loading = true;
+    private string? errorMessage;
+    private string panFilter = "";
+    private string ruleFilter = "";
+    private string reviewFilter = "";
+    private int currentPage = 1;
+    private int totalPages = 1;
+    private int totalCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRules();
+        await LoadAlerts();
+    }
+
+    private async Task LoadRules()
+    {
+        try
+        {
+            var client = HttpClientFactory.CreateClient("FraudAPI");
+            availableRules = await client.GetFromJsonAsync<List<RuleOption>>("api/rules") ?? new();
+        }
+        catch { /* Rules filter is optional */ }
+    }
+
+    private async Task LoadAlerts()
+    {
+        loading = true;
+        errorMessage = null;
+        try
+        {
+            var client = HttpClientFactory.CreateClient("FraudAPI");
+            var queryParams = new List<string> { $"page={currentPage}", "pageSize=20" };
+
+            if (!string.IsNullOrWhiteSpace(panFilter))
+                queryParams.Add($"pan={Uri.EscapeDataString(panFilter)}");
+            if (!string.IsNullOrWhiteSpace(ruleFilter))
+                queryParams.Add($"ruleId={Uri.EscapeDataString(ruleFilter)}");
+            if (!string.IsNullOrWhiteSpace(reviewFilter))
+                queryParams.Add($"isReviewed={reviewFilter}");
+
+            string url = $"api/alerts?{string.Join("&", queryParams)}";
+            var response = await client.GetFromJsonAsync<AlertsResponse>(url);
+
+            if (response != null)
+            {
+                alerts = response.Data.Select(a => new AlertItem
+                {
+                    AlertId = a.AlertId,
+                    TransactionId = a.TransactionId,
+                    PAN = a.PAN,
+                    RuleId = a.RuleId,
+                    RuleName = a.RuleName,
+                    IsReviewed = a.IsReviewed,
+                    FlaggedAt = a.FlaggedAt,
+                    Amount = a.Amount,
+                    Country = a.Country
+                }).ToList();
+
+                totalCount = response.TotalCount;
+                totalPages = response.TotalPages;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task ToggleReview(AlertItem alert)
+    {
+        alert.IsToggling = true;
+        try
+        {
+            var client = HttpClientFactory.CreateClient("FraudAPI");
+            var response = await client.PutAsync($"api/alerts/{alert.AlertId}/review", null);
+            if (response.IsSuccessStatusCode)
+            {
+                alert.IsReviewed = !alert.IsReviewed;
+            }
+        }
+        catch { /* Silently fail on toggle */ }
+        finally
+        {
+            alert.IsToggling = false;
+        }
+    }
+
+    private async Task PrevPage()
+    {
+        if (currentPage > 1)
+        {
+            currentPage--;
+            await LoadAlerts();
+        }
+    }
+
+    private async Task NextPage()
+    {
+        if (currentPage < totalPages)
+        {
+            currentPage++;
+            await LoadAlerts();
+        }
+    }
+
+    private string MaskPan(string pan)
+    {
+        if (string.IsNullOrEmpty(pan) || pan.Length < 8) return pan;
+        return $"{pan[..4]} •••• •••• {pan[^4..]}";
+    }
+
+    private string GetRuleBadgeClass(string ruleId)
+    {
+        return ruleId switch
+        {
+            "ML_HighConfidenceFraud" => "badge-danger",
+            "VelocityRule" => "badge-warning",
+            "TravelRule" => "badge-info",
+            "CardTestingRule" => "badge-danger",
+            "SpikeRule" => "badge-warning",
+            "ExpiryDateRule" => "badge-info",
+            _ => "badge-info"
+        };
+    }
+
+    // DTO classes
+    private class AlertsResponse
+    {
+        public int TotalCount { get; set; }
+        public int Page { get; set; }
+        public int PageSize { get; set; }
+        public int TotalPages { get; set; }
+        public List<AlertData> Data { get; set; } = new();
+    }
+
+    private class AlertData
+    {
+        public Guid AlertId { get; set; }
+        public Guid? TransactionId { get; set; }
+        public string PAN { get; set; } = "";
+        public string RuleId { get; set; } = "";
+        public string RuleName { get; set; } = "";
+        public bool IsReviewed { get; set; }
+        public DateTime FlaggedAt { get; set; }
+        public decimal? Amount { get; set; }
+        public string? Country { get; set; }
+    }
+
+    private class AlertItem : AlertData
+    {
+        public bool IsToggling { get; set; }
+    }
+
+    private class RuleOption
+    {
+        public string RuleId { get; set; } = "";
+        public string RuleName { get; set; } = "";
+    }
+}

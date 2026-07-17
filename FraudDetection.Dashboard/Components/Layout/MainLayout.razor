@@ -1,0 +1,27 @@
+@inherits LayoutComponentBase
+
+<div class="layout-wrapper">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <h2>🛡️ FraudGuard</h2>
+            <p>Hybrid Detection System</p>
+        </div>
+        <nav class="sidebar-nav">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="nav-icon">📊</span>
+                <span>Dashboard</span>
+            </NavLink>
+            <NavLink class="nav-link" href="alerts">
+                <span class="nav-icon">🚨</span>
+                <span>Fraud Alerts</span>
+            </NavLink>
+            <NavLink class="nav-link" href="rules">
+                <span class="nav-icon">⚙️</span>
+                <span>Rules</span>
+            </NavLink>
+        </nav>
+    </aside>
+    <main class="main-content">
+        @Body
+    </main>
+</div>

@@ -1,0 +1,174 @@
+@page "/"
+@rendermode InteractiveServer
+@inject IHttpClientFactory HttpClientFactory
+
+<div class="page-header animate-in">
+    <h1>Dashboard</h1>
+    <p>Real-time overview of the fraud detection pipeline</p>
+</div>
+
+@if (loading)
+{
+    <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <span class="loading-text">Loading metrics...</span>
+    </div>
+}
+else if (errorMessage != null)
+{
+    <div class="glass-card" style="border-color: var(--accent-danger); text-align: center; padding: 40px;">
+        <p style="color: var(--accent-danger-light); font-size: 1rem; margin-bottom: 8px;">⚠️ Could not connect to API</p>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">@errorMessage</p>
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 12px;">Make sure the WebAPI is running: <code>dotnet run --project FraudDetection.WebAPI</code></p>
+    </div>
+}
+else
+{
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+        <div class="kpi-card accent-primary animate-in">
+            <div class="kpi-label">Total Transactions</div>
+            <div class="kpi-value">@FormatNumber(metrics?.TotalTransactions ?? 0)</div>
+            <div class="kpi-sub">All processed records</div>
+        </div>
+        <div class="kpi-card accent-danger animate-in">
+            <div class="kpi-label">Fraud Alerts</div>
+            <div class="kpi-value">@FormatNumber(metrics?.TotalAlerts ?? 0)</div>
+            <div class="kpi-sub">@((metrics?.FraudRate ?? 0).ToString("F2"))% fraud rate</div>
+        </div>
+        <div class="kpi-card accent-warning animate-in">
+            <div class="kpi-label">Pending Review</div>
+            <div class="kpi-value">@FormatNumber(metrics?.PendingAlerts ?? 0)</div>
+            <div class="kpi-sub">Awaiting analyst review</div>
+        </div>
+        <div class="kpi-card accent-success animate-in">
+            <div class="kpi-label">Compromised Cards</div>
+            <div class="kpi-value">@FormatNumber(metrics?.CompromisedCards ?? 0)</div>
+            <div class="kpi-sub">Distinct PANs flagged</div>
+        </div>
+    </div>
+
+    <!-- Alerts by Rule breakdown -->
+    <div class="section-grid">
+        <div class="glass-card animate-in">
+            <h2 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 20px; color: var(--text-primary);">Alerts by Rule</h2>
+            @if (metrics?.AlertsByRule != null && metrics.AlertsByRule.Count > 0)
+            {
+                <div class="rule-breakdown">
+                    @foreach (var rule in metrics.AlertsByRule)
+                    {
+                        double pct = maxRuleCount > 0 ? (double)rule.Count / maxRuleCount * 100 : 0;
+                        <div class="rule-bar-item">
+                            <div class="rule-bar-header">
+                                <span class="rule-bar-name">@rule.RuleName</span>
+                                <span class="rule-bar-count">@FormatNumber(rule.Count)</span>
+                            </div>
+                            <div class="rule-bar-track">
+                                <div class="rule-bar-fill" style="width: @(pct.ToString("F1"))%"></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <div class="empty-state-icon">📋</div>
+                    <p>No alerts recorded yet</p>
+                </div>
+            }
+        </div>
+
+        <div class="glass-card animate-in">
+            <h2 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 20px; color: var(--text-primary);">Review Status</h2>
+            <div style="display: flex; flex-direction: column; gap: 24px; padding: 12px 0;">
+                <div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-size: 0.85rem; color: var(--text-secondary);">Reviewed</span>
+                        <span style="font-size: 0.85rem; font-weight: 700; color: var(--accent-success);">@FormatNumber(metrics?.ReviewedAlerts ?? 0)</span>
+                    </div>
+                    <div class="rule-bar-track">
+                        <div class="rule-bar-fill" style="width: @ReviewedPct()%; background: linear-gradient(90deg, var(--accent-success), #34d399);"></div>
+                    </div>
+                </div>
+                <div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-size: 0.85rem; color: var(--text-secondary);">Pending</span>
+                        <span style="font-size: 0.85rem; font-weight: 700; color: var(--accent-warning);">@FormatNumber(metrics?.PendingAlerts ?? 0)</span>
+                    </div>
+                    <div class="rule-bar-track">
+                        <div class="rule-bar-fill" style="width: @PendingPct()%; background: linear-gradient(90deg, var(--accent-warning), #fbbf24);"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private MetricsResponse? metrics;
+    private bool loading = true;
+    private string? errorMessage;
+    private int maxRuleCount = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var client = HttpClientFactory.CreateClient("FraudAPI");
+            metrics = await client.GetFromJsonAsync<MetricsResponse>("api/metrics");
+            if (metrics?.AlertsByRule != null && metrics.AlertsByRule.Count > 0)
+            {
+                maxRuleCount = metrics.AlertsByRule.Max(r => r.Count);
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private string FormatNumber(long value)
+    {
+        return value >= 1_000_000 ? $"{value / 1_000_000.0:F1}M"
+             : value >= 1_000 ? $"{value / 1_000.0:F1}K"
+             : value.ToString("N0");
+    }
+
+    private string ReviewedPct()
+    {
+        long total = (metrics?.TotalAlerts ?? 0);
+        if (total == 0) return "0";
+        return ((double)(metrics?.ReviewedAlerts ?? 0) / total * 100).ToString("F1");
+    }
+
+    private string PendingPct()
+    {
+        long total = (metrics?.TotalAlerts ?? 0);
+        if (total == 0) return "0";
+        return ((double)(metrics?.PendingAlerts ?? 0) / total * 100).ToString("F1");
+    }
+
+    // DTO classes matching the WebAPI MetricsController response
+    private class MetricsResponse
+    {
+        public long TotalTransactions { get; set; }
+        public long TotalAlerts { get; set; }
+        public long PendingAlerts { get; set; }
+        public long ReviewedAlerts { get; set; }
+        public long CompromisedCards { get; set; }
+        public double FraudRate { get; set; }
+        public List<RuleAlertCount> AlertsByRule { get; set; } = new();
+    }
+
+    private class RuleAlertCount
+    {
+        public string RuleId { get; set; } = "";
+        public string RuleName { get; set; } = "";
+        public int Count { get; set; }
+    }
+}

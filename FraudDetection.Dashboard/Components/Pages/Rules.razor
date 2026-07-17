@@ -1,0 +1,82 @@
+@page "/rules"
+@rendermode InteractiveServer
+@inject IHttpClientFactory HttpClientFactory
+
+<div class="page-header animate-in">
+    <h1>Detection Rules</h1>
+    <p>Active fraud detection rules registered in the system</p>
+</div>
+
+@if (loading)
+{
+    <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <span class="loading-text">Loading rules...</span>
+    </div>
+}
+else if (errorMessage != null)
+{
+    <div class="glass-card" style="border-color: var(--accent-danger); text-align: center; padding: 40px;">
+        <p style="color: var(--accent-danger-light);">⚠️ @errorMessage</p>
+    </div>
+}
+else
+{
+    <div class="rules-list">
+        @foreach (var rule in rules)
+        {
+            <div class="rule-card animate-in">
+                <div class="rule-id">@rule.RuleId</div>
+                <h3>
+                    <span>@GetRuleIcon(rule.RuleId)</span>
+                    @rule.RuleName
+                </h3>
+                <p>@rule.RuleDescription</p>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<RuleItem> rules = new();
+    private bool loading = true;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var client = HttpClientFactory.CreateClient("FraudAPI");
+            rules = await client.GetFromJsonAsync<List<RuleItem>>("api/rules") ?? new();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private string GetRuleIcon(string ruleId)
+    {
+        return ruleId switch
+        {
+            "VelocityRule" => "⚡",
+            "TravelRule" => "✈️",
+            "CardTestingRule" => "🧪",
+            "SpikeRule" => "📈",
+            "ExpiryDateRule" => "📅",
+            "ML_HighConfidenceFraud" => "🤖",
+            _ => "🔍"
+        };
+    }
+
+    private class RuleItem
+    {
+        public string RuleId { get; set; } = "";
+        public string RuleName { get; set; } = "";
+        public string RuleDescription { get; set; } = "";
+    }
+}
