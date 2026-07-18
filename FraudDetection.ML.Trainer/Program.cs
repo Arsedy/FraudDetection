@@ -133,7 +133,7 @@ class Program
         // Feature engineering pipeline:
         //   - OneHotEncode categorical columns (MCC, Country, POS, ResponseCode, Currency)
         //   - Concatenate all features into a single "Features" vector
-        //   - Train with LightGBM binary classifier
+        //   - Train with FastTree binary classifier (cross-platform, no native dependency)
         var pipeline = mlContext.Transforms.Categorical.OneHotEncoding("MCC_Encoded", "MCC")
             .Append(mlContext.Transforms.Categorical.OneHotEncoding("AcqCountry_Encoded", "AcqCountry"))
             .Append(mlContext.Transforms.Categorical.OneHotEncoding("POSEntryMode_Encoded", "POSEntryMode"))
@@ -149,15 +149,15 @@ class Program
                 "POSEntryMode_Encoded",
                 "ResponseCode_Encoded",
                 "CurrencyCode_Encoded"))
-            .Append(mlContext.BinaryClassification.Trainers.LightGbm(
+            .Append(mlContext.BinaryClassification.Trainers.FastTree(
                 labelColumnName: "Label",
                 featureColumnName: "Features",
                 numberOfLeaves: 31,
-                numberOfIterations: 200,
+                numberOfTrees: 200,
                 minimumExampleCountPerLeaf: 20,
                 learningRate: 0.1));
 
-        Console.WriteLine("  Training with LightGBM binary classifier...");
+        Console.WriteLine("  Training with FastTree binary classifier...");
         Console.WriteLine("  (This may take a few minutes depending on data volume)");
         Console.WriteLine();
 
