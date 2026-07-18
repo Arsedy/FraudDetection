@@ -51,3 +51,6 @@ appsettings.*.local.json
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+
+# ML.NET Model Artifacts
+*.zip
