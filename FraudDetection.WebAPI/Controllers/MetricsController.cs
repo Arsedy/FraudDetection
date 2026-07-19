@@ -80,6 +80,11 @@ public class MetricsController : ControllerBase
             .OrderBy(x => x.Date)
             .ToListAsync();
 
+        // Average fraud score across all alerts
+        double averageScore = totalAlerts > 0
+            ? await _db.FraudAlerts.AsNoTracking().AverageAsync(a => (double)a.Score)
+            : 0;
+
         return Ok(new
         {
             TotalTransactions = totalTransactions,
@@ -88,6 +93,7 @@ public class MetricsController : ControllerBase
             ReviewedAlerts = reviewedAlerts,
             CompromisedCards = compromisedCards,
             FraudRate = Math.Round(fraudRate, 4),
+            AverageScore = Math.Round(averageScore, 1),
             AlertsByRule = alertsByRule,
             DailyAlerts = dailyAlerts
         });

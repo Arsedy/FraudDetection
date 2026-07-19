@@ -53,6 +53,7 @@ else
                         <th>Card (PAN)</th>
                         <th>Amount</th>
                         <th>Rule</th>
+                        <th>Score</th>
                         <th>Country</th>
                         <th>Status</th>
                         <th>Action</th>
@@ -62,7 +63,7 @@ else
                     @if (alerts.Count == 0)
                     {
                         <tr>
-                            <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">
                                 No alerts found matching your filters
                             </td>
                         </tr>
@@ -77,6 +78,9 @@ else
                             </td>
                             <td>
                                 <span class="badge @GetRuleBadgeClass(alert.RuleId)">@alert.RuleName</span>
+                            </td>
+                            <td>
+                                <span class="badge @GetScoreBadgeClass(alert.Score)">@alert.Score</span>
                             </td>
                             <td>@(alert.Country?.Trim() ?? "—")</td>
                             <td>
@@ -177,6 +181,7 @@ else
                     PAN = a.PAN,
                     RuleId = a.RuleId,
                     RuleName = a.RuleName,
+                    Score = a.Score,
                     IsReviewed = a.IsReviewed,
                     FlaggedAt = a.FlaggedAt,
                     Amount = a.Amount,
@@ -254,6 +259,16 @@ else
         };
     }
 
+    private string GetScoreBadgeClass(int score)
+    {
+        return score switch
+        {
+            >= 70 => "badge-danger",
+            >= 40 => "badge-warning",
+            _ => "badge-success"
+        };
+    }
+
     // DTO classes
     private class AlertsResponse
     {
@@ -271,6 +286,7 @@ else
         public string PAN { get; set; } = "";
         public string RuleId { get; set; } = "";
         public string RuleName { get; set; } = "";
+        public int Score { get; set; }
         public bool IsReviewed { get; set; }
         public DateTime FlaggedAt { get; set; }
         public decimal? Amount { get; set; }

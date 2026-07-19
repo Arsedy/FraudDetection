@@ -62,6 +62,7 @@ public class AlertsController : ControllerBase
                 PAN = a.F2_PAN,
                 a.RuleId,
                 RuleName = a.Rule != null ? a.Rule.RuleName : a.RuleId,
+                a.Score,
                 a.IsReviewed,
                 a.FlaggedAt,
                 Amount = a.Transaction != null ? a.Transaction.F4_AmountTxn : (decimal?)null,
@@ -99,6 +100,7 @@ public class AlertsController : ControllerBase
                 a.RuleId,
                 RuleName = a.Rule != null ? a.Rule.RuleName : a.RuleId,
                 RuleDescription = a.Rule != null ? a.Rule.RuleDescription : null,
+                a.Score,
                 a.IsReviewed,
                 a.FlaggedAt,
                 Transaction = a.Transaction != null ? new

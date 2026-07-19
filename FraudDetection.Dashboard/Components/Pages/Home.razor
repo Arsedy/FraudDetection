@@ -46,6 +46,11 @@ else
             <div class="kpi-value">@FormatNumber(metrics?.CompromisedCards ?? 0)</div>
             <div class="kpi-sub">Distinct PANs flagged</div>
         </div>
+        <div class="kpi-card accent-primary animate-in">
+            <div class="kpi-label">Avg Risk Score</div>
+            <div class="kpi-value">@((metrics?.AverageScore ?? 0).ToString("F1"))</div>
+            <div class="kpi-sub">Mean ML confidence (0–100)</div>
+        </div>
     </div>
 
     <!-- Alerts by Rule breakdown -->
@@ -162,6 +167,7 @@ else
         public long ReviewedAlerts { get; set; }
         public long CompromisedCards { get; set; }
         public double FraudRate { get; set; }
+        public double AverageScore { get; set; }
         public List<RuleAlertCount> AlertsByRule { get; set; } = new();
     }
 
