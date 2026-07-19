@@ -3,9 +3,9 @@ using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using FraudDetectionWorker.Database;
+using FraudDetection.Worker.Database;
 
-namespace FraudDetectionWorker.Seeding;
+namespace FraudDetection.Worker.Seeding;
 
 public class SeedRunner
 {

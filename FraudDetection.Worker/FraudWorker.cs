@@ -3,9 +3,9 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
-using FraudDetectionWorker.Services;
+using FraudDetection.Worker.Services;
 
-namespace FraudDetectionWorker;
+namespace FraudDetection.Worker;
 
 public class FraudWorker : BackgroundService
 {

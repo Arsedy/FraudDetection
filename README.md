@@ -28,7 +28,7 @@ FraudDetection/ (Solution Root)
 │   ├── appsettings.json           # Connection string config
 │   └── FraudDetection.ML.Trainer.csproj
 │
-├── FraudDetectionWorker/          # 📁 Worker Service Project (Rules & DI Host)
+├── FraudDetection.Worker/          # 📁 Worker Service Project (Rules & DI Host)
 │   ├── Program.cs                 # CLI runner & DI configuration (PredictionEnginePool)
 │   ├── FraudWorker.cs             # Background worker execution loop
 │   ├── appsettings.json           # Worker configuration & connection strings
@@ -159,14 +159,14 @@ docker run --name postgres_db -e POSTGRES_PASSWORD=YourSecurePassword123! -p 543
 #### Step A: Seed the Database
 Seed the database with mock transactions. By default, 10% of these transactions contain deliberate fraud patterns:
 ```bash
-dotnet run --project FraudDetectionWorker -- --seed --count 100000
+dotnet run --project FraudDetection.Worker -- --seed --count 100000
 ```
 *(Creates the `fraud_detection` database schema and inserts 3,000,000 total rows representing 30 historical days).*
 
 #### Step B: Populate Initial Fraud Labels (Pure Rules Engine Mode)
 To train the ML model, we need labeled data. Run the worker in pure rules mode using the `--no-ml` flag to analyze the historical records and populate the `fraudalerts` table:
 ```bash
-dotnet run --project FraudDetectionWorker -- --no-ml
+dotnet run --project FraudDetection.Worker -- --no-ml
 ```
 *Wait for the console log to catch up to the current day and output "Sleeping for 24 hours...", then press `Ctrl+C` to terminate the worker.*
 
@@ -180,7 +180,7 @@ dotnet run --project FraudDetection.ML.Trainer
 #### Step D: Run the Hybrid Worker
 Start the background worker without any flags. It detects the `fraud_model.zip` file and automatically enables the hybrid ML filter:
 ```bash
-dotnet run --project FraudDetectionWorker
+dotnet run --project FraudDetection.Worker
 ```
 *Notice the logs outputting the hybrid stats breakdown: "ML Hybrid Stats — Clean (skipped): X, Immediate Fraud: Y, Grey Area (rules executed): Z".*
 

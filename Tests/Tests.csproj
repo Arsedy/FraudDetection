@@ -15,11 +15,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\FraudDetectionWorker\FraudDetectionWorker.csproj" />
+    <Using Include="Xunit" />
   </ItemGroup>
 
   <ItemGroup>
-    <Using Include="Xunit" />
+    <ProjectReference Include="..\FraudDetection.Worker\FraudDetection.Worker.csproj" />
   </ItemGroup>
 
 </Project>

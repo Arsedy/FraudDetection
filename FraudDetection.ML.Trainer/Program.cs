@@ -63,7 +63,7 @@ class Program
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("  ERROR: No transactions found in the database.");
-            Console.WriteLine("  Please seed data first: dotnet run --project FraudDetectionWorker -- --seed --count 100000");
+            Console.WriteLine("  Please seed data first: dotnet run --project FraudDetection.Worker -- --seed --count 100000");
             Console.ResetColor();
             return;
         }
@@ -72,7 +72,7 @@ class Program
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("  ERROR: No fraud alerts found in the database.");
-            Console.WriteLine("  Please run the rules engine first: dotnet run --project FraudDetectionWorker");
+            Console.WriteLine("  Please run the rules engine first: dotnet run --project FraudDetection.Worker");
             Console.WriteLine("  The trainer needs the existing rules engine output to derive training labels.");
             Console.ResetColor();
             return;
@@ -233,7 +233,7 @@ class Program
 
         Console.WriteLine("=============================================================");
         Console.WriteLine("   Training Complete! Next steps:");
-        Console.WriteLine("   1. Run the hybrid worker: dotnet run --project FraudDetectionWorker");
+        Console.WriteLine("   1. Run the hybrid worker: dotnet run --project FraudDetection.Worker");
         Console.WriteLine("      (The worker will automatically load fraud_model.zip)");
         Console.WriteLine("=============================================================");
     }

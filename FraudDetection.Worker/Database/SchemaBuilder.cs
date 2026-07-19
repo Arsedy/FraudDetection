@@ -3,7 +3,7 @@ using Npgsql;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace FraudDetectionWorker.Database;
+namespace FraudDetection.Worker.Database;
 
 public class SchemaBuilder
 {

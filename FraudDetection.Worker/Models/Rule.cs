@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace FraudDetectionWorker.Models;
+namespace FraudDetection.Worker.Models;
 
 [Table("rules")]
 public class Rule

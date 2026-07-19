@@ -1,13 +1,13 @@
 using System.Threading.Tasks;
 using System.Threading;
-using FraudDetectionWorker.Models;
-using FraudDetectionWorker.Rules;
-using FraudDetectionWorker.Repositories;
+using FraudDetection.Worker.Models;
+using FraudDetection.Worker.Rules;
+using FraudDetection.Worker.Repositories;
 using FraudDetection.Shared.Models;
 using Microsoft.Extensions.ML;
 
 
-namespace FraudDetectionWorker.Services;
+namespace FraudDetection.Worker.Services;
 
 public class FraudDetectionEngine : IFraudDetectionEngine
 {

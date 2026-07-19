@@ -1,4 +1,4 @@
-using FraudDetectionWorker.Database;
+using FraudDetection.Worker.Database;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);

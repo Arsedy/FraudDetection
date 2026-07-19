@@ -1,6 +1,6 @@
-using FraudDetectionWorker.Models;
+using FraudDetection.Worker.Models;
 
-namespace FraudDetectionWorker.Repositories;
+namespace FraudDetection.Worker.Repositories;
 
 public interface IFraudAlertRepository
 {

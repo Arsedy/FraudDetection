@@ -3,10 +3,10 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using FraudDetectionWorker.Models;
-using FraudDetectionWorker.Rules;
+using FraudDetection.Worker.Models;
+using FraudDetection.Worker.Rules;
 
-namespace FraudDetectionWorker.Database;
+namespace FraudDetection.Worker.Database;
 
 public static class RuleSyncHelper
 {

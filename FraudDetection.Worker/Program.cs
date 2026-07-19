@@ -1,9 +1,9 @@
-using FraudDetectionWorker;
-using FraudDetectionWorker.Database;
-using FraudDetectionWorker.Seeding;
-using FraudDetectionWorker.Repositories;
-using FraudDetectionWorker.Services;
-using FraudDetectionWorker.Rules;
+using FraudDetection.Worker;
+using FraudDetection.Worker.Database;
+using FraudDetection.Worker.Seeding;
+using FraudDetection.Worker.Repositories;
+using FraudDetection.Worker.Services;
+using FraudDetection.Worker.Rules;
 using FraudDetection.Shared.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

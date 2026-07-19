@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using FraudDetectionWorker.Database;
+using FraudDetection.Worker.Database;
 
 namespace FraudDetection.WebAPI.Controllers;
 

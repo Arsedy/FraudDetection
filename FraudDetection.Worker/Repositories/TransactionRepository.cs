@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using FraudDetectionWorker.Database;
-using FraudDetectionWorker.Models;
-namespace FraudDetectionWorker.Repositories;
+using FraudDetection.Worker.Database;
+using FraudDetection.Worker.Models;
+namespace FraudDetection.Worker.Repositories;
 public class TransactionRepository : ITransactionRepository
 {
     private readonly AppDbContext _dbContext;

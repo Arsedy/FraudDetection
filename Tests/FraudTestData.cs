@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using FraudDetectionWorker.Models;
+using FraudDetection.Worker.Models;
 
 namespace Tests;
 

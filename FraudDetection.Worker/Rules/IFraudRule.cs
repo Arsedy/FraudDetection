@@ -1,8 +1,8 @@
 using System.Threading.Tasks;
 using System.Threading;
-using FraudDetectionWorker.Models;
+using FraudDetection.Worker.Models;
 
-namespace FraudDetectionWorker.Rules;
+namespace FraudDetection.Worker.Rules;
 
 public interface IFraudRule
 {

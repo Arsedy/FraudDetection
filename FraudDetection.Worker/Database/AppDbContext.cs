@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using FraudDetectionWorker.Models;
+using FraudDetection.Worker.Models;
 
-namespace FraudDetectionWorker.Database;
+namespace FraudDetection.Worker.Database;
 
 public class AppDbContext : DbContext
 {

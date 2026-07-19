@@ -1,10 +1,10 @@
 using System;
 using System.Threading.Tasks;
 using System.Threading;
-using FraudDetectionWorker.Models;
-using FraudDetectionWorker.Rules;
+using FraudDetection.Worker.Models;
+using FraudDetection.Worker.Rules;
 
-namespace FraudDetectionWorker.Rules;
+namespace FraudDetection.Worker.Rules;
 public class SpikeRule : IFraudRule
 {
     public string Name => "Spike Rule";

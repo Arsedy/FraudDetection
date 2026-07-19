@@ -1,8 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using System.Threading;
-using FraudDetectionWorker.Models;
-using FraudDetectionWorker.Rules;
+using FraudDetection.Worker.Models;
+using FraudDetection.Worker.Rules;
 using Xunit;
 
 namespace Tests;

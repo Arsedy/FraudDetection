@@ -1,7 +1,7 @@
-using FraudDetectionWorker.Database;
-using FraudDetectionWorker.Models;
+using FraudDetection.Worker.Database;
+using FraudDetection.Worker.Models;
 
-namespace FraudDetectionWorker.Repositories;
+namespace FraudDetection.Worker.Repositories;
 
 public class FraudAlertRepository : IFraudAlertRepository
 {

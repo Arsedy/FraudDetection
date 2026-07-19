@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Threading;
-using FraudDetectionWorker.Models;
+using FraudDetection.Worker.Models;
 
-namespace FraudDetectionWorker.Rules;
+namespace FraudDetection.Worker.Rules;
 
 public class ExpiryDateRule : IFraudRule
 {

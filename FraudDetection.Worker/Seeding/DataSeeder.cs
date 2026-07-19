@@ -6,7 +6,7 @@ using Npgsql;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace FraudDetectionWorker.Seeding;
+namespace FraudDetection.Worker.Seeding;
 
 public class DataSeeder
 {

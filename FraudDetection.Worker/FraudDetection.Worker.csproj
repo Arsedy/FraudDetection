@@ -4,7 +4,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>dotnet-FraudDetectionWorker-3968e40b-ae89-4147-8ed9-8f1d78322c5d</UserSecretsId>
+    <UserSecretsId>dotnet-FraudDetection.Worker-3968e40b-ae89-4147-8ed9-8f1d78322c5d</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

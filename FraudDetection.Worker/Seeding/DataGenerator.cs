@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Text;
 
-namespace FraudDetectionWorker.Seeding;
+namespace FraudDetection.Worker.Seeding;
 
 public class DataGenerator
 {
