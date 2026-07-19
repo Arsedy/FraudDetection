@@ -62,7 +62,7 @@ public class FraudDetectionEngine : IFraudDetectionEngine
         foreach (var group in group_by_pan)
         {
             var transactions_list = group.ToList();
-
+            float max_score = 0.0f; //If ml doesnt work we will use this to store the max score from the rules engine for this group.
             // ────────────────────────────────────────────────────────
             // HYBRID ML SCORING: Pre-filter each transaction in the group
             // ────────────────────────────────────────────────────────
@@ -76,6 +76,7 @@ public class FraudDetectionEngine : IFraudDetectionEngine
                 {
                     var features = MapToFeatures(txn);
                     var prediction = _predictionPool!.Predict(features);
+                    max_score = Math.Max(max_score, prediction.Probability);
 
                     if (prediction.Probability >= ImmediateFraudThreshold)
                     {
@@ -108,7 +109,8 @@ public class FraudDetectionEngine : IFraudDetectionEngine
                     {
                         TransactionId = immediateFraudTxnId.Value,
                         F2_PAN = group.Key,
-                        RuleId = MlHighConfidenceRuleId
+                        RuleId = MlHighConfidenceRuleId,
+                        Score = (int)(max_score * 100) // Convert precentege to integer score for storage
                     };
                     await _fraud_alert_repository.AddAlertAsync(alert, cancellationToken);
                     totalalerts++;
@@ -119,9 +121,9 @@ public class FraudDetectionEngine : IFraudDetectionEngine
                 greyAreaProcessed++;
             }
 
-            // ────────────────────────────────────────────────────────
-            // RULES ENGINE: Deep-dive analysis for grey area transactions
-            // ────────────────────────────────────────────────────────
+            // ──────────────────────────────────────────────────────────────────────────────────────────────────
+            // RULES ENGINE: Evaluate each rule for the transactions in this PAN group if ML considered gray area
+            // ──────────────────────────────────────────────────────────────────────────────────────────────────
             foreach (var rule in _rule)
             {
                 var result = await rule.IsRuleSatisfiedAsync(transactions_list, cancellationToken);
@@ -132,7 +134,8 @@ public class FraudDetectionEngine : IFraudDetectionEngine
                     {
                         TransactionId = result.TransactionId,
                         F2_PAN = group.Key,
-                        RuleId = rule.Id
+                        RuleId = rule.Id,
+                        Score = (int)(max_score * 100)
                     };
                     await _fraud_alert_repository.AddAlertAsync(alert, cancellationToken);
                     totalalerts++;

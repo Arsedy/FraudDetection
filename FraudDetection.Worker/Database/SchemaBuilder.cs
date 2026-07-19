@@ -119,6 +119,7 @@ public class SchemaBuilder
             transactionid UUID NOT NULL,
             f2_pan VARCHAR(19) NOT NULL,
             ruleid VARCHAR(50) NOT NULL,
+            score INT NOT NULL DEFAULT 0,
             isreviewed BOOLEAN NOT NULL DEFAULT FALSE,
             flaggedat TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
             CONSTRAINT FK_FraudAlert_Transaction FOREIGN KEY (transactionid) REFERENCES AuthorizationTransactions(TransactionId),
@@ -163,6 +164,15 @@ public class SchemaBuilder
                 WHERE table_name='fraudalerts' AND column_name='description'
             ) THEN
                 ALTER TABLE fraudalerts DROP COLUMN description;
+            END IF;
+
+            -- 3. Check if we need to add score column
+            IF NOT EXISTS (
+                SELECT 1 
+                FROM information_schema.columns 
+                WHERE table_name='fraudalerts' AND column_name='score'
+            ) THEN
+                ALTER TABLE fraudalerts ADD COLUMN score INT NOT NULL DEFAULT 0;
             END IF;
         END $$;";
 

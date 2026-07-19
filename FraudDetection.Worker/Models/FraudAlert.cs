@@ -22,6 +22,9 @@ public class FraudAlert
     [MaxLength(50)]
     public string RuleId { get; set; } = null!;
 
+    [Column("score")]
+    public int Score { get; set; } = 0;
+
     [Column("isreviewed")]
     public bool IsReviewed { get; set; } = false;
 
