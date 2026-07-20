@@ -48,13 +48,13 @@ public class ExpiryDateRule : IFraudRule
             for (int j = i; j >= 0; j--)
             {
                 var prevTxn = authRequests[j];
-                
+
                 // If we fall out of the time window, stop checking backwards
                 if (prevTxn.F7_TxnDateTime < windowStartTime)
                 {
                     break;
                 }
-                
+
                 distinctExpDates.Add(prevTxn.F14_ExpDate);
             }
 

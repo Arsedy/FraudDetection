@@ -12,7 +12,7 @@ public class TransactionRepository : ITransactionRepository
     }
     public async Task<List<string>> GetUniquePansWithMultipleTransactionsAsync(
         DateTime startDate,
-        DateTime endDate, 
+        DateTime endDate,
         CancellationToken cancellationToken)
     {
         return await _dbContext.AuthorizationTransactions
@@ -25,14 +25,14 @@ public class TransactionRepository : ITransactionRepository
     }
 
     public async Task<List<AuthorizationTransaction>> GetTransactionsByPansAsync(
-        List<string> pans, 
-        DateTime startDate, 
-        DateTime endDate, 
+        List<string> pans,
+        DateTime startDate,
+        DateTime endDate,
         CancellationToken cancellationToken)
     {
         return await _dbContext.AuthorizationTransactions
             .AsNoTracking()
-            .Where(t => pans.Contains(t.F2_PAN) && 
+            .Where(t => pans.Contains(t.F2_PAN) &&
                 t.F7_TxnDateTime >= startDate &&
                 t.F7_TxnDateTime <= endDate)
             .OrderBy(t => t.F7_TxnDateTime)

@@ -16,7 +16,7 @@ public class SpikeRule : IFraudRule
 
         if (transactions == null || !transactions.Any())
         {
-            return new RuleResult(string.Empty, string.Empty , null);
+            return new RuleResult(string.Empty, string.Empty, null);
         }
 
         var sortedTransactions = transactions.OrderBy(t => t.F4_AmountTxn).ToList();
@@ -34,7 +34,7 @@ public class SpikeRule : IFraudRule
         }
 
         // 3. Eşik Değeri Belirleme (Örn: Medyanın 5 katı)
-        decimal multiplier = 5.0M; 
+        decimal multiplier = 5.0M;
         decimal threshold = medianAmount * multiplier;
 
 
@@ -43,10 +43,10 @@ public class SpikeRule : IFraudRule
 
         if (latestTransaction.F4_AmountTxn > threshold)
         {
-            return new RuleResult(Name, Description , latestTransaction.TransactionId);
+            return new RuleResult(Name, Description, latestTransaction.TransactionId);
         }
-        
 
-        return new RuleResult(string.Empty, string.Empty , null); // Return an empty RuleResult if the rule is satisfied
+
+        return new RuleResult(string.Empty, string.Empty, null); // Return an empty RuleResult if the rule is satisfied
     }
 }

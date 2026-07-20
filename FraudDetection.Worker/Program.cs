@@ -76,7 +76,7 @@ using (var scope = host.Services.CreateScope())
 {
     var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
     var progLogger = loggerFactory.CreateLogger("Program");
-    
+
     try
     {
         progLogger.LogInformation("Initializing database schema...");

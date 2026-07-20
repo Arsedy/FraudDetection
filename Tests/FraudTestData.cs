@@ -98,7 +98,7 @@ public static class FraudTestData
     public static List<AuthorizationTransaction> GetCardTestingPattern(string pan = "4111222233336666")
     {
         var list = new List<AuthorizationTransaction>();
-        
+
         // 3 small declines
         for (int i = 0; i < 3; i++)
         {
@@ -339,13 +339,13 @@ public static class FraudTestData
     {
         var list = new List<AuthorizationTransaction>();
         var baseTime = BaseTime;
-        
+
         // 4 transactions in 2 minutes, with different expiration dates
         for (int i = 0; i < 4; i++)
         {
             var time = baseTime.AddSeconds(i * 30);
             var expMonth = (i + 1).ToString("D2"); // "01", "02", "03", "04"
-            
+
             list.Add(new AuthorizationTransaction
             {
                 TransactionId = Guid.NewGuid(),

@@ -12,7 +12,7 @@ public class SchemaBuilder
 
     public SchemaBuilder(IConfiguration configuration, ILogger<SchemaBuilder> logger)
     {
-        _connectionString = configuration.GetConnectionString("DefaultConnection") 
+        _connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
         _logger = logger;
     }
@@ -31,7 +31,7 @@ public class SchemaBuilder
         // Parse the connection string to find the database name and build a connection string for 'postgres' default database
         var builder = new NpgsqlConnectionStringBuilder(_connectionString);
         string targetDatabase = builder.Database ?? "fraud_detection";
-        
+
         // Connect to 'postgres' system database to check/create the target database
         builder.Database = "postgres";
         string systemConnectionString = builder.ConnectionString;

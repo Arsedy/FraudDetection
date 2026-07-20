@@ -15,7 +15,7 @@ public class DataSeeder
 
     public DataSeeder(IConfiguration configuration, ILogger<DataSeeder> logger)
     {
-        _connectionString = configuration.GetConnectionString("DefaultConnection") 
+        _connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
         _logger = logger;
     }
@@ -26,9 +26,9 @@ public class DataSeeder
         int totalCount = dailyCount * totalDays;
 
         _logger.LogInformation("Starting 30-day seeding process. Daily Count: {DailyCount}, Total Expected: {TotalCount} transactions.", dailyCount, totalCount);
-        
+
         long startStan = 0;
-        long startRrn = 100000000000; 
+        long startRrn = 100000000000;
 
         GetLastSequences(ref startStan, ref startRrn);
         _logger.LogInformation("Resuming/starting with STAN: {Stan}, RRN: {Rrn}", startStan, startRrn);
@@ -51,7 +51,7 @@ public class DataSeeder
             while (seededForDay < dailyCount)
             {
                 int currentBatchSize = Math.Min(batchSize, dailyCount - seededForDay);
-                
+
                 var batchStopwatch = Stopwatch.StartNew();
                 var auths = generator.GenerateBatch(currentBatchSize, ref startStan, ref startRrn, baseDate);
                 batchStopwatch.Stop();
@@ -62,8 +62,8 @@ public class DataSeeder
 
                 seededForDay += currentBatchSize;
                 totalSeededCount += currentBatchSize;
-                
-                _logger.LogInformation("  [Day {DayOffset} | Batch {BatchIndex}] Inserted {BatchSize} rows. Day progress: {DayCount}/{DailyCount} (Total: {TotalCount}/{ExpectedTotal})", 
+
+                _logger.LogInformation("  [Day {DayOffset} | Batch {BatchIndex}] Inserted {BatchSize} rows. Day progress: {DayCount}/{DailyCount} (Total: {TotalCount}/{ExpectedTotal})",
                     dayOffset, batchIndex, currentBatchSize, seededForDay, dailyCount, totalSeededCount, totalCount);
 
                 batchIndex++;
@@ -71,7 +71,7 @@ public class DataSeeder
         }
 
         totalStopwatch.Stop();
-        _logger.LogInformation("Successfully completed seeding of {TotalCount} rows across {TotalDays} days in {ElapsedSeconds} seconds.", 
+        _logger.LogInformation("Successfully completed seeding of {TotalCount} rows across {TotalDays} days in {ElapsedSeconds} seconds.",
             totalSeededCount, totalDays, totalStopwatch.Elapsed.TotalSeconds);
     }
 
@@ -114,7 +114,7 @@ public class DataSeeder
         {
             columns.Add($"\"{column.ColumnName.ToLowerInvariant()}\""); // Use lowercase to match folded columns in PG
         }
-        
+
         string copyCommand = $"COPY \"{destinationTable}\" ({string.Join(", ", columns)}) FROM STDIN (FORMAT BINARY)";
 
         using var writer = connection.BeginBinaryImport(copyCommand);

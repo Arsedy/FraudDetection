@@ -33,8 +33,8 @@ public class CardTestingRule : IFraudRule
         //    whose amount is suspiciously larger (5x the average decline amount)
         var lastDeclineTime = declines.Last().F7_TxnDateTime;
         var suspiciousApproval = sortedTxns
-            .Where(t => t.F39_ResponseCode == "00" 
-                     && t.F7_TxnDateTime >= lastDeclineTime 
+            .Where(t => t.F39_ResponseCode == "00"
+                     && t.F7_TxnDateTime >= lastDeclineTime
                      && t.F4_AmountTxn > declineAvg * 5m)
             .FirstOrDefault();
 

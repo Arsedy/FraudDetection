@@ -40,6 +40,6 @@ public class AppDbContext : DbContext
         // Configure indexes on AuthorizationTransactions for performance
         modelBuilder.Entity<AuthorizationTransaction>()
             .HasIndex(a => new { a.F2_PAN, a.F7_TxnDateTime });//Primary Account Number
-            
+
     }
 }

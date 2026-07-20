@@ -39,15 +39,15 @@ public class FraudDetectionEngine : IFraudDetectionEngine
         _mlEnabled = mlEnabled && _predictionPool != null;
     }
 
-    public async Task ProcessTransactionAsync(DateTime targetdate,  CancellationToken cancellationToken)
+    public async Task ProcessTransactionAsync(DateTime targetdate, CancellationToken cancellationToken)
     {
         DateTime startDate = targetdate.Date;
         DateTime endDate = targetdate.Date.AddDays(1);
         List<string> uniquePans = await _transaction_repository.GetUniquePansWithMultipleTransactionsAsync(
                                 startDate, endDate, cancellationToken); // returns list of unique PANs with multiple transactions in the specified date range
-        
+
         _logger.LogInformation($"Found {uniquePans.Count} unique PANs with multiple transactions between {startDate} and {endDate}.");
-        
+
         List<AuthorizationTransaction> transactions = await _transaction_repository.GetTransactionsByPansAsync(
                                 uniquePans, startDate, endDate, cancellationToken);
 
@@ -127,7 +127,7 @@ public class FraudDetectionEngine : IFraudDetectionEngine
             foreach (var rule in _rule)
             {
                 var result = await rule.IsRuleSatisfiedAsync(transactions_list, cancellationToken);
-                if(result.IsSatisfied == false)
+                if (result.IsSatisfied == false)
                 {
                     // Create a FraudAlert object and save it to the database
                     var alert = new FraudAlert

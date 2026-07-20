@@ -11,7 +11,7 @@ public class DataGenerator
     private readonly List<string> _cardPool = [];
     private readonly List<MerchantTemplate> _merchantPool = [];
     private readonly Dictionary<string, string> _panCountryMap = new(); // Tracks each card's home country
-    
+
     // ISO 3166 numeric country codes
     private static readonly string[] Countries = ["840", "792", "826", "250", "276", "380", "392", "036"]; // USA, Turkey, UK, France, Germany, Italy, Japan, Australia
 
@@ -74,11 +74,11 @@ public class DataGenerator
 
     private void GenerateMerchantPool(int size)
     {
-        var names = new[] { 
+        var names = new[] {
             "AMAZON.COM", "WAL-MART", "TARGET", "BEST BUY", "EXXONMOBIL", "SHELL OIL", "CHEVRON",
             "MARRIOTT HOTELS", "HILTON HOTELS", "DELTA AIRLINES", "STEAM GAMES", "APPLE STORE",
-            "NETFLIX", "SPOTIFY", "UBER RIDE", "STARBUCKS", "MC DONALD'S", "CASINO GRANDE", 
-            "GOLD JEWELERS", "BINANCE EXCH", "CASH APP", "PATEK PHILIPPE" 
+            "NETFLIX", "SPOTIFY", "UBER RIDE", "STARBUCKS", "MC DONALD'S", "CASINO GRANDE",
+            "GOLD JEWELERS", "BINANCE EXCH", "CASH APP", "PATEK PHILIPPE"
         };
 
         var mccs = new Dictionary<string, string>
@@ -114,9 +114,9 @@ public class DataGenerator
             string name = names[_rand.Next(names.Length)];
             string mcc = mccs[name];
             string locName = locations[_rand.Next(locations.Length)];
-            string country = locName.Contains("GB") ? "826" : 
-                             locName.Contains("FR") ? "250" : 
-                             locName.Contains("DE") ? "276" : 
+            string country = locName.Contains("GB") ? "826" :
+                             locName.Contains("FR") ? "250" :
+                             locName.Contains("DE") ? "276" :
                              locName.Contains("TR") ? "792" : "840";
 
             string f43Name = (name.Length > 22 ? name[..22] : name).PadRight(22);
@@ -210,10 +210,10 @@ public class DataGenerator
         }
 
         var localMerchants = _merchantPool.FindAll(m => m.Country == homeCountry);
-        var merchant = localMerchants.Count > 0 
-            ? localMerchants[_rand.Next(localMerchants.Count)] 
+        var merchant = localMerchants.Count > 0
+            ? localMerchants[_rand.Next(localMerchants.Count)]
             : _merchantPool[_rand.Next(_merchantPool.Count)];
-        
+
         decimal amount = (decimal)(_rand.NextDouble() * 120 + 2.50);
         if (_rand.NextDouble() < 0.05) amount = (decimal)(_rand.NextDouble() * 800 + 100);
 
@@ -227,7 +227,7 @@ public class DataGenerator
         string rrnStr = GetNextRrn(ref rrn);
         string stanStr = GetNextStan(ref stan);
 
-        AddAuthRow(auths, 
+        AddAuthRow(auths,
             transactionId: Guid.NewGuid(),
             mti: "0100",
             pan: pan,
@@ -252,7 +252,7 @@ public class DataGenerator
     {
         int txCount = _rand.Next(5, 9);
         decimal baseAmount = (decimal)(_rand.NextDouble() * 300 + 150);
-        
+
         for (int step = 0; step < txCount; step++)
         {
             DateTime txnTime = baseTime.AddMinutes(step * _rand.Next(1, 3));
@@ -415,7 +415,7 @@ public class DataGenerator
             DateTime txnTime = baseTime.AddHours(step);
             decimal amount = (decimal)(_rand.NextDouble() * 50 + 10); // Normal amount between $10 and $60
             var merchant = _merchantPool[_rand.Next(_merchantPool.Count)];
-            
+
             string rrnStr = GetNextRrn(ref rrn);
             string stanStr = GetNextStan(ref stan);
 
@@ -479,7 +479,7 @@ public class DataGenerator
         for (int i = 0; i < 4; i++)
         {
             DateTime txnTime = baseTime.AddSeconds(i * 30);
-            decimal amount = 1.05m; 
+            decimal amount = 1.05m;
             string expMonth = (i + 1).ToString("D2"); // "01", "02", "03", "04"
             string expDate = $"{expMonth}28"; // Changing expiration dates
 
@@ -505,7 +505,7 @@ public class DataGenerator
                 location: onlineMerchant.NameAndLocation,
                 currency: "840"
             );
-            
+
             // Adjust the added row's Expiry Date to match our generated expDate
             // Since AddAuthRow defaults to "2912", we need to override it
             auths.Rows[^1]["F14_ExpDate"] = expDate;
@@ -514,8 +514,8 @@ public class DataGenerator
         return 4;
     }
 
-    private static void AddAuthRow(DataTable table, Guid transactionId, string mti, string pan, string procCode, 
-        decimal amount, DateTime txnTime, string stan, string rrn, string? authCode, string respCode, 
+    private static void AddAuthRow(DataTable table, Guid transactionId, string mti, string pan, string procCode,
+        decimal amount, DateTime txnTime, string stan, string rrn, string? authCode, string respCode,
         string mcc, string country, string entryMode, string tid, string mid, string location, string currency)
     {
         table.Rows.Add(

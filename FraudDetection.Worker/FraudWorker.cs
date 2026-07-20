@@ -44,7 +44,7 @@ public class FraudWorker : BackgroundService
             {
                 _logger.LogInformation("Caught up to current day (Day -1). Sleeping for 24 hours...");
                 // Keep it at -1 so the next time it wakes up (tomorrow), it processes the new yesterday.
-                currentDayOffset = -1; 
+                currentDayOffset = -1;
                 await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
             }
         }

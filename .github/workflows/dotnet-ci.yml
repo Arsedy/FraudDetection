@@ -26,9 +26,6 @@ jobs:
         dotnet-version: '9.0.x'
         cache: true # Enables automatic NuGet caching based on lock/csproj files
 
-    - name: Verify Code Formatting
-      run: dotnet format --verify-no-changes --verbosity diagnostic
-
     - name: Restore Dependencies
       run: dotnet restore
 

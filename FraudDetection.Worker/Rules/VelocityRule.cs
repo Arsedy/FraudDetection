@@ -18,7 +18,7 @@ public class VelocityRule : IFraudRule
         cancellationToken.ThrowIfCancellationRequested();
         if (transactions == null || transactions.Count <= 5)
         {
-            return new RuleResult(string.Empty, string.Empty , null);
+            return new RuleResult(string.Empty, string.Empty, null);
         }
 
         // 1. Sort the transactions chronologically to make the window movement accurate
@@ -26,7 +26,7 @@ public class VelocityRule : IFraudRule
 
         // 2. Set up the sliding window configurations
         var window = new Queue<DateTime>();
-        const double windowMinutes = 10.0; 
+        const double windowMinutes = 10.0;
         const int threshold = 5;           // Trigger when count is strictly > 5
 
         foreach (var txn in sortedTxns)
@@ -45,9 +45,9 @@ public class VelocityRule : IFraudRule
             // 5. Evaluate if the window size has exceeded the threshold
             if (window.Count > threshold)
             {
-                return new RuleResult(Name, Description , txn.TransactionId); // Return the transaction ID of the transaction that triggered the rule
+                return new RuleResult(Name, Description, txn.TransactionId); // Return the transaction ID of the transaction that triggered the rule
             }
         }
-        return new RuleResult(string.Empty, string.Empty , null); // Return an empty RuleResult if the rule is satisfied
+        return new RuleResult(string.Empty, string.Empty, null); // Return an empty RuleResult if the rule is satisfied
     }
-}   
+}
