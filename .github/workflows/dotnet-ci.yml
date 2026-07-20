@@ -13,18 +13,17 @@ concurrency:
 
 jobs:
   build-and-test:
-    name: Build, Lint & Test (.NET 9)
+    name: Build & Test (.NET 9)
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Setup .NET SDK
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: '9.0.x'
-        cache: true # Enables automatic NuGet caching based on lock/csproj files
 
     - name: Restore Dependencies
       run: dotnet restore
@@ -39,7 +38,7 @@ jobs:
 
     - name: Publish Worker Artifact
       # Prepares the production deployment files (stripping debug symbols)
-      run: dotnet publish FraudDetectionWorker/FraudDetectionWorker.csproj -c Release -o ./publish --no-build
+      run: dotnet publish FraudDetection.Worker/FraudDetection.Worker.csproj -c Release -o ./publish --no-build
 
     - name: Upload Build Artifacts
       # Saves the compiled output so it can be deployed or downloaded
