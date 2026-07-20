@@ -13,9 +13,12 @@ This solution is divided into clean, decoupled projects:
 ```text
 FraudDetection/ (Solution Root)
 │
-├── FraudDetection.sln             # Solution file
-├── README.md                      # Main documentation
-├── .gitignore                     # Git exclusion rules
+├── .github/
+│   └── workflows/
+│       └── dotnet-ci.yml      # Automated GitHub Actions CI/CD pipeline
+├── FraudDetection.sln         # Solution file
+├── README.md                  # Main documentation
+├── .gitignore                 # Exclusion rules for git
 │
 ├── FraudDetection.Shared/         # 📁 Shared Class Library
 │   ├── Models/

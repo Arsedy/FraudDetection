@@ -1,0 +1,53 @@
+name: .NET CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+# Prevents redundant runs on the same branch when new commits are pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build, Lint & Test (.NET 9)
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+        cache: true # Enables automatic NuGet caching based on lock/csproj files
+
+    - name: Verify Code Formatting
+      run: dotnet format --verify-no-changes --verbosity diagnostic
+
+    - name: Restore Dependencies
+      run: dotnet restore
+
+    - name: Build Solution (Strict)
+      # Treat warnings as errors to keep code clean and prevent compilation debt
+      run: dotnet build --no-restore --configuration Release /p:TreatWarningsAsErrors=true
+
+    - name: Run Unit Tests
+      # Generates standard test results for summary reporting
+      run: dotnet test --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=test-results.trx"
+
+    - name: Publish Worker Artifact
+      # Prepares the production deployment files (stripping debug symbols)
+      run: dotnet publish FraudDetectionWorker/FraudDetectionWorker.csproj -c Release -o ./publish --no-build
+
+    - name: Upload Build Artifacts
+      # Saves the compiled output so it can be deployed or downloaded
+      uses: actions/upload-artifact@v4
+      with:
+        name: fraud-detection-worker-release
+        path: ./publish
+        retention-days: 7
