@@ -16,7 +16,7 @@ public class TransactionsController : ControllerBase
     }
 
     /// <summary>
-    /// GET /api/transactions — Paginated transaction log with optional filters.
+    /// GET /api/transactions — Paginated transaction log with optional filters and alert annotations.
     /// </summary>
     [HttpGet]
     public async Task<IActionResult> GetTransactions(
@@ -45,7 +45,7 @@ public class TransactionsController : ControllerBase
 
         int totalCount = await query.CountAsync();
 
-        var transactions = await query
+        var rawTransactions = await query
             .OrderByDescending(t => t.F7_TxnDateTime)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -64,13 +64,44 @@ public class TransactionsController : ControllerBase
             })
             .ToListAsync();
 
+        // Cross-reference alerts to highlight transactions that triggered rules/ML
+        var txnIds = rawTransactions.Select(t => (Guid?)t.TransactionId).ToList();
+        var matchingAlerts = await _db.FraudAlerts
+            .AsNoTracking()
+            .Include(a => a.Rule)
+            .Where(a => a.TransactionId != null && txnIds.Contains(a.TransactionId))
+            .ToListAsync();
+
+        var annotatedData = rawTransactions.Select(t =>
+        {
+            var alert = matchingAlerts.FirstOrDefault(a => a.TransactionId == t.TransactionId);
+            return new
+            {
+                t.TransactionId,
+                t.PAN,
+                t.Amount,
+                t.TxnDateTime,
+                t.MCC,
+                t.Country,
+                t.POSEntryMode,
+                t.ResponseCode,
+                t.MerchantLocation,
+                t.Currency,
+                IsFlagged = alert != null,
+                TriggeredRuleId = alert?.RuleId,
+                TriggeredRuleName = alert?.Rule != null ? alert.Rule.RuleName : alert?.RuleId,
+                AlertScore = alert?.Score ?? 0,
+                AlertId = alert?.AlertId
+            };
+        });
+
         return Ok(new
         {
             TotalCount = totalCount,
             Page = page,
             PageSize = pageSize,
             TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
-            Data = transactions
+            Data = annotatedData
         });
     }
 }

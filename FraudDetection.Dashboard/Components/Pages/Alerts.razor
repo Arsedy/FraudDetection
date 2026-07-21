@@ -72,7 +72,11 @@ else
                     {
                         <tr>
                             <td>@alert.FlaggedAt.ToString("yyyy-MM-dd HH:mm")</td>
-                            <td><span class="pan-masked">@MaskPan(alert.PAN)</span></td>
+                            <td>
+                                <a href="transactions?pan=@alert.PAN&highlight=@alert.TransactionId" class="pan-link" title="View Card History">
+                                    <span class="pan-masked">@MaskPan(alert.PAN)</span> 🔍
+                                </a>
+                            </td>
                             <td style="font-weight: 600; color: var(--text-primary);">
                                 @(alert.Amount?.ToString("C2") ?? "—")
                             </td>
@@ -93,7 +97,10 @@ else
                                     <span class="badge badge-warning">⏳ Pending</span>
                                 }
                             </td>
-                            <td>
+                            <td style="display: flex; gap: 8px;">
+                                <a href="transactions?pan=@alert.PAN&highlight=@alert.TransactionId" class="btn btn-primary btn-sm">
+                                    Inspect 🔍
+                                </a>
                                 <button class="btn btn-ghost btn-sm"
                                         @onclick="() => ToggleReview(alert)"
                                         disabled="@alert.IsToggling">
