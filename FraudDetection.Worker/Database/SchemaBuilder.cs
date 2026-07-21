@@ -111,6 +111,20 @@ public class SchemaBuilder
             cmd.ExecuteNonQuery();
         }
 
+        // 2a-2. Create FraudCheckState Table for Resumable Checkpoints
+        string createCheckStateTableSql = @"
+        CREATE TABLE IF NOT EXISTS fraudcheckstate (
+            id INT PRIMARY KEY DEFAULT 1,
+            lastprocesseddayoffset INT NOT NULL DEFAULT -30,
+            lastprocessedtxndatetime TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updatedat TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );";
+
+        using (var cmd = new NpgsqlCommand(createCheckStateTableSql, connection))
+        {
+            cmd.ExecuteNonQuery();
+        }
+
         // 2b. Create FraudAlerts Table & Perform incremental migration if needed
         string migrateAndCreateAlertsSql = @"
         -- Create table if not exists first

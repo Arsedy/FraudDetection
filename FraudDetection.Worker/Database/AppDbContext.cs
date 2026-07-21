@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<AuthorizationTransaction> AuthorizationTransactions { get; set; } = null!;
     public DbSet<FraudAlert> FraudAlerts { get; set; } = null!;
     public DbSet<Rule> Rules { get; set; } = null!;
+    public DbSet<FraudCheckState> FraudCheckStates { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
