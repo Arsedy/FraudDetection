@@ -1,0 +1,52 @@
+# This .dockerignore file is placed at the solution root. It helps to keep
+# the Docker build context small and clean by excluding unnecessary files
+# and directories, resulting in faster builds and smaller images.
+
+## General Exclusions
+**/bin/
+**/obj/
+**/out/
+**/publish/
+
+## IDE/Editor specific files
+.vs/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## Git
+.git/
+.gitignore
+.gitattributes
+
+## Documentation & CI
+.github/
+README.md
+
+## Local Configuration
+**/appsettings.Development.json
+**/secrets.json
+**/Properties/launchSettings.json
+
+## Test Projects & Artifacts
+Tests/
+*.trx
+
+## ML Model & Training
+# The ML model is a build artifact. It's better to copy it into the image
+# during a multi-stage build rather than including it in the initial context.
+*.zip
+
+## Node.js dependencies (if any, e.g., for Blazor client-side libraries)
+**/node_modules/
+
+## Other Project Sources
+# When building a specific project (e.g., WebAPI), you don't need the source
+# code of other runnable projects in the context. The Dockerfile will copy
+# only what's needed.
+FraudDetection.Dashboard/
+FraudDetection.ML.Trainer/
+FraudDetection.WebAPI/
+FraudDetection.Worker/

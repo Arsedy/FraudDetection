@@ -88,6 +88,11 @@ using (var scope = host.Services.CreateScope())
         var rules = scope.ServiceProvider.GetServices<IFraudRule>();
         await RuleSyncHelper.SyncRulesAsync(dbContext, rules);
         progLogger.LogInformation("Database initialization and rule synchronization complete.");
+        
+        if(!await dbContext.AuthorizationTransactions.AnyAsync())// Check if seeding is needed by looking for existing transactions in the database
+        {
+            isSeedMode = true;
+        }
 
         // Log ML model status
         if (noMl)
