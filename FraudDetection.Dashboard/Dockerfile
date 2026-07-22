@@ -8,6 +8,7 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["FraudDetection.Dashboard/FraudDetection.Dashboard.csproj", "FraudDetection.Dashboard/"]
+COPY ["FraudDetection.Shared/FraudDetection.Shared.csproj", "FraudDetection.Shared/"]
 RUN dotnet restore "FraudDetection.Dashboard/FraudDetection.Dashboard.csproj"
 COPY . .
 WORKDIR "/src/FraudDetection.Dashboard"

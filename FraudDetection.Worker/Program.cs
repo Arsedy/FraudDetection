@@ -38,8 +38,13 @@ foreach (var ruleType in ruleTypes)
 // ────────────────────────────────────────────────────────────────
 // ML.NET PredictionEnginePool registration (hybrid mode)
 // ────────────────────────────────────────────────────────────────
-string modelPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "fraud_model.zip");
-modelPath = Path.GetFullPath(modelPath);
+string[] candidatePaths = [
+    Path.Combine(AppContext.BaseDirectory, "fraud_model.zip"),
+    "/app/fraud_model.zip",
+    Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "fraud_model.zip")),
+    Path.GetFullPath("fraud_model.zip")
+];
+string modelPath = candidatePaths.FirstOrDefault(File.Exists) ?? candidatePaths.Last();
 
 bool mlModelAvailable = !noMl && File.Exists(modelPath);
 

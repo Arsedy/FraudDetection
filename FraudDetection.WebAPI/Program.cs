@@ -9,13 +9,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddHealthChecks();
 
 // CORS policy for Blazor Dashboard
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("DashboardPolicy", policy =>
     {
-        policy.WithOrigins("https://localhost:5002", "http://localhost:5003")
+        policy.AllowAnyOrigin()
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -24,6 +25,7 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 app.UseCors("DashboardPolicy");
+app.MapHealthChecks("/health");
 app.MapControllers();
 
 app.Run();

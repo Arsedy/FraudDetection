@@ -41,12 +41,3 @@ Tests/
 
 ## Node.js dependencies (if any, e.g., for Blazor client-side libraries)
 **/node_modules/
-
-## Other Project Sources
-# When building a specific project (e.g., WebAPI), you don't need the source
-# code of other runnable projects in the context. The Dockerfile will copy
-# only what's needed.
-FraudDetection.Dashboard/
-FraudDetection.ML.Trainer/
-FraudDetection.WebAPI/
-FraudDetection.Worker/
