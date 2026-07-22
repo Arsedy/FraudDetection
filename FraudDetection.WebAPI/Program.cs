@@ -1,11 +1,25 @@
 using FraudDetection.Worker.Database;
+using FraudDetection.Shared.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.ML;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Register EF Core with PostgreSQL (read-only monitoring context)
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+string[] candidatePaths = [
+    Path.Combine(AppContext.BaseDirectory, "fraud_model.zip"),
+    "/app/fraud_model.zip",
+    Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "fraud_model.zip")),
+    Path.GetFullPath("fraud_model.zip")
+];
+string modelPath = candidatePaths.FirstOrDefault(File.Exists) ?? candidatePaths.Last();
+builder.Services.AddPredictionEnginePool<TransactionFeatures, TransactionPrediction>() //activate ML.NET PredictionEnginePool for fraud detection endpoints.
+    .FromFile(filePath: modelPath, watchForChanges: true);
+
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
