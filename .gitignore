@@ -54,3 +54,6 @@ Desktop.ini
 
 # ML.NET Model Artifacts
 *.zip
+
+# Ignore sensitive folders
+Library/
