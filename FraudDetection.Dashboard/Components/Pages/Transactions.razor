@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
 
 <div class="page-header animate-in">
     <h1>Transaction Log</h1>
@@ -67,13 +68,14 @@ else
                         <th>Country</th>
                         <th>Response</th>
                         <th>Flagged Rule / Detection</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @if (transactions.Count == 0)
                     {
                         <tr>
-                            <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">
                                 No transactions found matching filters
                             </td>
                         </tr>
@@ -120,6 +122,17 @@ else
                                 {
                                     <span style="color: var(--text-muted); font-size: 0.75rem;">—</span>
                                 }
+                            </td>
+                            <td>
+                                <div style="display: flex; gap: 6px;">
+                                    <a href="model?txnId=@txn.TransactionId" class="btn btn-primary btn-sm" title="Score with ML Model">
+                                        🧠 Score
+                                    </a>
+                                    <button class="btn btn-ghost btn-sm" title="Copy transaction JSON"
+                                            @onclick="() => CopyTransaction(txn)">
+                                        📋 Copy
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     }
@@ -233,6 +246,25 @@ else
     {
         if (string.IsNullOrEmpty(pan) || pan.Length < 8) return pan;
         return $"{pan[..4]} •••• •••• {pan[^4..]}";
+    }
+
+    private async Task CopyTransaction(TransactionItem txn)
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            TransactionId = txn.TransactionId,
+            PAN = txn.PAN,
+            Amount = txn.Amount,
+            TxnDateTime = txn.TxnDateTime,
+            MCC = txn.MCC,
+            Country = txn.Country,
+            POSEntryMode = txn.POSEntryMode,
+            ResponseCode = txn.ResponseCode,
+            MerchantLocation = txn.MerchantLocation,
+            Currency = txn.Currency
+        }, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", json);
     }
 
     private string GetBadgeStyle(string? ruleId)

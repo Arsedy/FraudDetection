@@ -104,4 +104,44 @@ public class TransactionsController : ControllerBase
             Data = annotatedData
         });
     }
+
+    /// <summary>
+    /// GET /api/transactions/{id} — Retrieve a single transaction by ID.
+    /// </summary>
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetTransaction(Guid id)
+    {
+        var txn = await _db.AuthorizationTransactions
+            .AsNoTracking()
+            .Where(t => t.TransactionId == id)
+            .Select(t => new
+            {
+                t.TransactionId,
+                Mti = t.Mti,
+                PAN = t.F2_PAN,
+                ProcCode = t.F3_ProcCode,
+                Amount = t.F4_AmountTxn,
+                TxnDateTime = t.F7_TxnDateTime,
+                STAN = t.F11_STAN,
+                LocalTime = t.F12_LocalTime,
+                LocalDate = t.F13_LocalDate,
+                ExpDate = t.F14_ExpDate,
+                MCC = t.F18_MCC,
+                Country = t.F19_AcqCountry,
+                POSEntryMode = t.F22_POSEntryMode,
+                RRN = t.F37_RRN,
+                AuthCode = t.F38_AuthCode,
+                ResponseCode = t.F39_ResponseCode,
+                TID = t.F41_TID,
+                MID = t.F42_MID,
+                MerchantLocation = t.F43_MerchantLoc,
+                Currency = t.F49_CurrencyCode
+            })
+            .FirstOrDefaultAsync();
+
+        if (txn == null)
+            return NotFound();
+
+        return Ok(txn);
+    }
 }

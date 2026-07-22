@@ -13,7 +13,7 @@ public class SeedRunner
 
     public static int GetSeedCount(string[] args)
     {
-        int seedCount = 1000000;
+        int seedCount = 100_000; // Default seed count if not specified
         int countIndex = Array.IndexOf(args, "--count");
         if (countIndex != -1 && countIndex + 1 < args.Length)
         {

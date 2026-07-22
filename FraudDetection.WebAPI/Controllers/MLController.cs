@@ -26,6 +26,10 @@ public class MLController : ControllerBase
     [HttpPost("predict")]
     public async Task<IActionResult> Predict([FromBody] AuthorizationTransaction transaction)
     {
+        if (transaction == null)
+        {
+            return BadRequest("Transaction data is required.");
+        }
         var features = MapToFeatures(transaction);
         var prediction = _mlModelService.Predict(features);
 

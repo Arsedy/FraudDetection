@@ -23,6 +23,10 @@ builder.Services.AddPredictionEnginePool<TransactionFeatures, TransactionPredict
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new() { Title = "FraudDetection API", Version = "v1", Description = "REST API for the Hybrid Fraud Detection System" });
+});
 builder.Services.AddHealthChecks();
 
 // CORS policy for Blazor Dashboard
@@ -37,6 +41,13 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "FraudDetection API v1");
+    c.RoutePrefix = "docs";
+});
 
 app.UseCors("DashboardPolicy");
 app.MapHealthChecks("/health");

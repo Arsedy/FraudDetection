@@ -1,0 +1,390 @@
+@page "/model"
+@rendermode InteractiveServer
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<div class="page-header animate-in">
+    <h1>ML Model Score Checker</h1>
+    <p>Submit transaction features to the ML model and inspect fraud probability</p>
+</div>
+
+@if (autoFillLoading)
+{
+    <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <span class="loading-text">Loading transaction data...</span>
+    </div>
+}
+else
+{
+    <div class="model-page-grid">
+        <!-- Input Form -->
+        <div class="glass-card animate-in">
+            <h2 class="form-section-title">Transaction Features</h2>
+            @if (autoFilled)
+            {
+                <div class="autofill-banner">
+                    <span>✨ Auto-filled from transaction</span>
+                    <button class="btn btn-ghost btn-sm" @onclick="ClearForm">Clear</button>
+                </div>
+            }
+            <p class="form-section-sub">Enter the ISO 8583 fields used by the ML model</p>
+
+            <div class="model-form">
+                <div class="form-group">
+                    <label class="form-label">Amount (Field 4)</label>
+                    <input class="form-control" type="number" step="0.01" placeholder="e.g. 1500.00"
+                           @bind="formAmount" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Local Time Hour (0–23)</label>
+                    <input class="form-control" type="number" min="0" max="23" placeholder="e.g. 14"
+                           @bind="formHour" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">MCC (Field 18)</label>
+                    <input class="form-control" type="text" maxlength="4" placeholder="e.g. 5411"
+                           @bind="formMCC" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Acquirer Country (Field 19)</label>
+                    <input class="form-control" type="text" maxlength="3" placeholder="e.g. 840"
+                           @bind="formCountry" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">POS Entry Mode (Field 22)</label>
+                    <input class="form-control" type="text" maxlength="3" placeholder="e.g. 051"
+                           @bind="formPOSEntry" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Response Code (Field 39)</label>
+                    <input class="form-control" type="text" maxlength="2" placeholder="e.g. 00"
+                           @bind="formResponseCode" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Currency Code (Field 49)</label>
+                    <input class="form-control" type="text" maxlength="3" placeholder="e.g. 840"
+                           @bind="formCurrency" />
+                </div>
+
+                <button class="btn btn-primary btn-score" @onclick="SubmitScore" disabled="@scoring">
+                    @if (scoring)
+                    {
+                        <span class="loading-spinner" style="width:16px;height:16px;border-width:2px;"></span>
+                        <span>Scoring...</span>
+                    }
+                    else
+                    {
+                        <span>🧠 Run ML Prediction</span>
+                    }
+                </button>
+            </div>
+        </div>
+
+        <!-- Result Panel -->
+        <div class="glass-card animate-in result-panel">
+            <h2 class="form-section-title">Prediction Result</h2>
+
+            @if (scoreError != null)
+            {
+                <div class="score-error">
+                    <span>⚠️ @scoreError</span>
+                </div>
+            }
+            else if (scoreResult == null)
+            {
+                <div class="empty-state">
+                    <div class="empty-state-icon">🧠</div>
+                    <p>Submit transaction features to see the fraud probability score</p>
+                </div>
+            }
+            else
+            {
+                <div class="score-display">
+                    <!-- Score Gauge -->
+                    <div class="score-gauge">
+                        <svg viewBox="0 0 120 120" class="gauge-svg">
+                            <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"/>
+                            <circle cx="60" cy="60" r="52" fill="none"
+                                    stroke="@GetGaugeColor(scoreResult.Value)"
+                                    stroke-width="10"
+                                    stroke-dasharray="@GetDashArray(scoreResult.Value)"
+                                    stroke-dashoffset="0"
+                                    stroke-linecap="round"
+                                    transform="rotate(-90 60 60)"
+                                    class="gauge-fill"/>
+                        </svg>
+                        <div class="gauge-center">
+                            <span class="gauge-value" style="color: @GetGaugeColor(scoreResult.Value)">
+                                @((scoreResult.Value * 100).ToString("F1"))%
+                            </span>
+                            <span class="gauge-label">Probability</span>
+                        </div>
+                    </div>
+
+                    <!-- Risk Level -->
+                    <div class="risk-card @GetRiskClass(scoreResult.Value)">
+                        <span class="risk-icon">@GetRiskIcon(scoreResult.Value)</span>
+                        <span class="risk-text">@GetRiskLabel(scoreResult.Value)</span>
+                    </div>
+
+                    <!-- Interpretation -->
+                    <div class="score-interpretation">
+                        <p>@GetRiskDescription(scoreResult.Value)</p>
+                    </div>
+
+                    <!-- Feature Summary -->
+                    @if (lastFeatures != null)
+                    {
+                        <div class="features-summary">
+                            <h3>Features Sent</h3>
+                            <div class="features-grid">
+                                <div class="feature-item">
+                                    <span class="feature-label">Amount</span>
+                                    <span class="feature-value">@lastFeatures.Amount.ToString("F2")</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-label">Hour</span>
+                                    <span class="feature-value">@lastFeatures.LocalTimeHour</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-label">MCC</span>
+                                    <span class="feature-value">@lastFeatures.MCC</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-label">Country</span>
+                                    <span class="feature-value">@lastFeatures.AcqCountry</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-label">POS Mode</span>
+                                    <span class="feature-value">@lastFeatures.POSEntryMode</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-label">Response</span>
+                                    <span class="feature-value">@lastFeatures.ResponseCode</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-label">Currency</span>
+                                    <span class="feature-value">@lastFeatures.CurrencyCode</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "txnId")]
+    public Guid? TxnId { get; set; }
+
+    // Form fields
+    private decimal formAmount;
+    private int formHour;
+    private string formMCC = "";
+    private string formCountry = "";
+    private string formPOSEntry = "";
+    private string formResponseCode = "";
+    private string formCurrency = "";
+
+    // State
+    private bool autoFillLoading;
+    private bool autoFilled;
+    private bool scoring;
+    private double? scoreResult;
+    private string? scoreError;
+    private FeatureSnapshot? lastFeatures;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (TxnId.HasValue)
+        {
+            await AutoFillFromTransaction(TxnId.Value);
+        }
+    }
+
+    private async Task AutoFillFromTransaction(Guid txnId)
+    {
+        autoFillLoading = true;
+        try
+        {
+            var client = HttpClientFactory.CreateClient("FraudAPI");
+            var txn = await client.GetFromJsonAsync<TransactionDetail>($"api/transactions/{txnId}");
+            if (txn != null)
+            {
+                formAmount = txn.Amount;
+                formHour = txn.LocalTime.Hour;
+                formMCC = txn.MCC?.Trim() ?? "";
+                formCountry = txn.Country?.Trim() ?? "";
+                formPOSEntry = txn.POSEntryMode?.Trim() ?? "";
+                formResponseCode = txn.ResponseCode?.Trim() ?? "";
+                formCurrency = txn.Currency?.Trim() ?? "";
+                autoFilled = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            scoreError = $"Failed to load transaction: {ex.Message}";
+        }
+        finally
+        {
+            autoFillLoading = false;
+        }
+    }
+
+    private async Task SubmitScore()
+    {
+        scoring = true;
+        scoreError = null;
+        scoreResult = null;
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("FraudAPI");
+
+            // Build the request body matching AuthorizationTransaction structure expected by MLController
+            var requestBody = new
+            {
+                F4_AmountTxn = formAmount,
+                F12_LocalTime = $"{formHour:D2}:00:00",
+                F18_MCC = formMCC,
+                F19_AcqCountry = formCountry,
+                F22_POSEntryMode = formPOSEntry,
+                F39_ResponseCode = formResponseCode,
+                F49_CurrencyCode = formCurrency,
+                // Required fields for deserialization — not used by ML but needed by the model
+                TransactionId = Guid.Empty,
+                Mti = "0100",
+                F2_PAN = "0000000000000000",
+                F3_ProcCode = "000000",
+                F7_TxnDateTime = DateTime.UtcNow,
+                F11_STAN = "000000",
+                F13_LocalDate = DateOnly.FromDateTime(DateTime.Now).ToString("yyyy-MM-dd"),
+                F14_ExpDate = "2512",
+                F37_RRN = "000000000000",
+                F41_TID = "00000000",
+                F42_MID = "000000000000000",
+                F43_MerchantLoc = "Test Location"
+            };
+
+            var response = await client.PostAsJsonAsync("api/ml/predict", requestBody);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<PredictionResult>();
+                if (result != null)
+                {
+                    scoreResult = result.Probability;
+                    lastFeatures = new FeatureSnapshot
+                    {
+                        Amount = (float)formAmount,
+                        LocalTimeHour = formHour,
+                        MCC = formMCC,
+                        AcqCountry = formCountry,
+                        POSEntryMode = formPOSEntry,
+                        ResponseCode = formResponseCode,
+                        CurrencyCode = formCurrency
+                    };
+                }
+            }
+            else
+            {
+                var errorBody = await response.Content.ReadAsStringAsync();
+                scoreError = $"API returned {(int)response.StatusCode}: {errorBody}";
+            }
+        }
+        catch (Exception ex)
+        {
+            scoreError = ex.Message;
+        }
+        finally
+        {
+            scoring = false;
+        }
+    }
+
+    private void ClearForm()
+    {
+        formAmount = 0;
+        formHour = 0;
+        formMCC = "";
+        formCountry = "";
+        formPOSEntry = "";
+        formResponseCode = "";
+        formCurrency = "";
+        autoFilled = false;
+        scoreResult = null;
+        scoreError = null;
+        lastFeatures = null;
+        Navigation.NavigateTo("/model");
+    }
+
+    // Gauge helpers
+    private string GetGaugeColor(double prob) =>
+        prob >= 0.85 ? "#ef4444" : prob >= 0.30 ? "#f59e0b" : "#10b981";
+
+    private string GetDashArray(double prob)
+    {
+        double circumference = 2 * Math.PI * 52;
+        double filled = circumference * prob;
+        return $"{filled:F1} {circumference:F1}";
+    }
+
+    private string GetRiskClass(double prob) =>
+        prob >= 0.85 ? "risk-high" : prob >= 0.30 ? "risk-medium" : "risk-low";
+
+    private string GetRiskIcon(double prob) =>
+        prob >= 0.85 ? "🔴" : prob >= 0.30 ? "🟡" : "🟢";
+
+    private string GetRiskLabel(double prob) =>
+        prob >= 0.85 ? "HIGH RISK — Immediate Fraud" : prob >= 0.30 ? "MEDIUM RISK — Grey Area" : "LOW RISK — Likely Clean";
+
+    private string GetRiskDescription(double prob) =>
+        prob >= 0.85
+            ? "Score ≥ 0.85 — The ML model is highly confident this transaction is fraudulent. In production, this bypasses the rules engine and triggers an immediate alert."
+            : prob >= 0.30
+                ? "Score 0.30–0.84 — This falls in the grey area. In production, the rules engine (Velocity, Travel, CardTesting, etc.) will run additional checks on this transaction's card history."
+                : "Score < 0.30 — The ML model considers this transaction clean. In production, rules engine checks are skipped entirely for efficiency.";
+
+    // DTOs
+    private class PredictionResult
+    {
+        public double Probability { get; set; }
+    }
+
+    private class TransactionDetail
+    {
+        public Guid TransactionId { get; set; }
+        public string Mti { get; set; } = "";
+        public string PAN { get; set; } = "";
+        public decimal Amount { get; set; }
+        public DateTime TxnDateTime { get; set; }
+        public TimeOnly LocalTime { get; set; }
+        public string MCC { get; set; } = "";
+        public string Country { get; set; } = "";
+        public string POSEntryMode { get; set; } = "";
+        public string ResponseCode { get; set; } = "";
+        public string Currency { get; set; } = "";
+        public string? MerchantLocation { get; set; }
+    }
+
+    private class FeatureSnapshot
+    {
+        public float Amount { get; set; }
+        public float LocalTimeHour { get; set; }
+        public string MCC { get; set; } = "";
+        public string AcqCountry { get; set; } = "";
+        public string POSEntryMode { get; set; } = "";
+        public string ResponseCode { get; set; } = "";
+        public string CurrencyCode { get; set; } = "";
+    }
+}
