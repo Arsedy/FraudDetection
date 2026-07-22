@@ -1,0 +1,79 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:15
+    container_name: fraud-detection-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: YourSecurePassword123! #placeholder, change it to a secure password
+      POSTGRES_DB: fraud_detection_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  background-worker:
+    build:
+      context: .
+      dockerfile: FraudDetection.Worker/Dockerfile
+    container_name: fraud-detection-worker
+    restart: always
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - DOTNET_RUNNING_IN_CONTAINER=true
+      - DOTNET_USE_POLLING_FILE_WATCHER=1
+      - POSTGRES_CONNECTION_STRING=Host=postgres;Port=5432;Database=fraud_detection_db;Username=postgres;Password=YourSecurePassword123! #placeholder, change it to a secure password
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./fraud_model.zip:/app/fraud_model.zip
+    ports:
+      - "5000:8080"
+  webapi:
+    build:
+      context: .
+      dockerfile: FraudDetection.WebAPI/Dockerfile
+    container_name: fraud-detection-webapi
+    restart: always
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - DOTNET_RUNNING_IN_CONTAINER=true
+      - DOTNET_USE_POLLING_FILE_WATCHER=1
+      - POSTGRES_CONNECTION_STRING=Host=postgres;Port=5432;Database=fraud_detection_db;Username=postgres;Password=YourSecurePassword123! #placeholder, change it to a secure password
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./fraud_model.zip:/app/fraud_model.zip
+    ports:
+      - "5001:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 30s
+      retries: 5
+      start_period: 15s
+  dashboard:
+    build:
+      context: .
+      dockerfile: FraudDetection.Dashboard/Dockerfile
+    container_name: fraud-detection-dashboard
+    restart: always
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - DOTNET_RUNNING_IN_CONTAINER=true
+      - DOTNET_USE_POLLING_FILE_WATCHER=1
+    depends_on:
+      webapi:
+        condition: service_healthy
+    ports:
+      - "5002:8080"
+
+volumes:
+  postgres_data:
