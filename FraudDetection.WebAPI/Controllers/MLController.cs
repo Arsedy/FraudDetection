@@ -14,7 +14,7 @@ public class MLController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly PredictionEnginePool<TransactionFeatures, TransactionPrediction> _mlModelService;
-    public MLController(AppDbContext db , PredictionEnginePool<TransactionFeatures, TransactionPrediction> mlModelService)
+    public MLController(AppDbContext db, PredictionEnginePool<TransactionFeatures, TransactionPrediction> mlModelService)
     {
         _db = db;
         _mlModelService = mlModelService;
@@ -35,7 +35,7 @@ public class MLController : ControllerBase
 
         return Ok(new
         {
-            features,  
+            features,
             prediction.Probability
         });
     }

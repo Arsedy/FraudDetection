@@ -93,8 +93,8 @@ using (var scope = host.Services.CreateScope())
         var rules = scope.ServiceProvider.GetServices<IFraudRule>();
         await RuleSyncHelper.SyncRulesAsync(dbContext, rules);
         progLogger.LogInformation("Database initialization and rule synchronization complete.");
-        
-        if(!await dbContext.AuthorizationTransactions.AnyAsync())// Check if seeding is needed by looking for existing transactions in the database
+
+        if (!await dbContext.AuthorizationTransactions.AnyAsync())// Check if seeding is needed by looking for existing transactions in the database
         {
             isSeedMode = true;
         }
@@ -121,12 +121,18 @@ using (var scope = host.Services.CreateScope())
     }
 }
 
-if (isSeedMode)
-{
-    SeedRunner.Run(host, seedCount);
-    return; // Exit application immediately
-}
-
 var logger = host.Services.GetRequiredService<ILogger<Program>>();
 logger.LogInformation("Starting Fraud Detection Background Service...");
-await host.RunAsync(); // regular worker execution
+
+if (isSeedMode)
+{
+    logger.LogInformation("Seed mode enabled. Seeding {Count} transactions into the database...", seedCount);
+    SeedRunner.Run(host, seedCount);
+    logger.LogInformation("Seeding complete. Starting Fraud Detection Background Service to process seeded transactions...");
+    await host.RunAsync(); // run worker after seeding to process the seeded transactions
+}
+else
+{
+    await host.RunAsync();// regular worker execution
+}
+
