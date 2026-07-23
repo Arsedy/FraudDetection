@@ -27,6 +27,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - DOTNET_RUNNING_IN_CONTAINER=true
       - DOTNET_USE_POLLING_FILE_WATCHER=1
+      - SeedCount=100000
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=fraud_detection_db;Username=postgres;Password=YourSecurePassword123!
     depends_on:
       postgres:

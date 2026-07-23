@@ -5,15 +5,28 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using FraudDetection.Worker.Database;
 
+using Microsoft.Extensions.Configuration;
+
 namespace FraudDetection.Worker.Seeding;
 
 public class SeedRunner
 {
     public static bool IsSeedMode(string[] args) => args.Contains("--seed");
 
-    public static int GetSeedCount(string[] args)
+    public static int GetSeedCount(string[] args, IConfiguration? config = null)
     {
-        int seedCount = 100_000; // Default seed count if not specified
+        int defaultSeedCount = 100_000; // Default daily seed count if not specified (100k/day * 30 days = 3M total)
+
+        if (config != null && int.TryParse(config["SeedCount"], out int configCount))
+        {
+            defaultSeedCount = configCount;
+        }
+        else if (int.TryParse(Environment.GetEnvironmentVariable("SeedCount"), out int envCount))
+        {
+            defaultSeedCount = envCount;
+        }
+
+        int seedCount = defaultSeedCount;
         int countIndex = Array.IndexOf(args, "--count");
         if (countIndex != -1 && countIndex + 1 < args.Length)
         {

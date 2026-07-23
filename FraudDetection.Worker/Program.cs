@@ -12,10 +12,10 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.ML;
 
 bool isSeedMode = SeedRunner.IsSeedMode(args);
-int seedCount = SeedRunner.GetSeedCount(args);
 bool noMl = args.Contains("--no-ml");
 
 var builder = Host.CreateApplicationBuilder(args);
+int seedCount = SeedRunner.GetSeedCount(args, builder.Configuration);
 
 // Register DB services
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -129,10 +129,8 @@ if (isSeedMode)
     logger.LogInformation("Seed mode enabled. Seeding {Count} transactions into the database...", seedCount);
     SeedRunner.Run(host, seedCount);
     logger.LogInformation("Seeding complete. Starting Fraud Detection Background Service to process seeded transactions...");
-    await host.RunAsync(); // run worker after seeding to process the seeded transactions
 }
-else
-{
-    await host.RunAsync();// regular worker execution
-}
+
+await host.RunAsync();// regular worker execution
+
 

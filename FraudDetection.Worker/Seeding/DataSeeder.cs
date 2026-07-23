@@ -20,7 +20,7 @@ public class DataSeeder
         _logger = logger;
     }
 
-    public void SeedData(int dailyCount = 1000000, int batchSize = 100000)
+    public void SeedData(int dailyCount = 100000, int batchSize = 100000)
     {
         int totalDays = 30;
         int totalCount = dailyCount * totalDays;
