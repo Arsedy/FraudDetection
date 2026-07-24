@@ -42,15 +42,28 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+app.UseCors("DashboardPolicy");
+app.MapHealthChecks("/health");
+app.MapControllers();
+
+// Serve Swagger UI at both /swagger and /docs
 app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "FraudDetection API v1");
+    c.RoutePrefix = "swagger";
+});
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "FraudDetection API v1");
     c.RoutePrefix = "docs";
 });
 
-app.UseCors("DashboardPolicy");
-app.MapHealthChecks("/health");
-app.MapControllers();
+// Redirect root / to Swagger UI
+app.MapGet("/", context =>
+{
+    context.Response.Redirect("/swagger");
+    return Task.CompletedTask;
+});
 
 app.Run();
